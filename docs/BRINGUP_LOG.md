@@ -195,6 +195,14 @@ Note: the STM32 isn't touched by the Linux flasher, so on this board the "stock"
 - The board was migrated in place: old `arducnc-*` units, scripts, udev rule and folders removed, then `qstep-bootstrap.sh --bundle qstep-0.1.0-rc2.tar.gz` (firmware `Verified OK`, no TMPDIR error now), then a power cycle. It booted `rt-qstep1`, blessed. The old `rt-arducnc2` kernel was purged. Nothing named arducnc is left on the board.
 - Motion: hold-test 0 changes at sub-step targets. soak-test: 45 moves, max following error 8.6 steps, 0-step return error, link 0 late/0 errors, servo tmax 497 µs.
 
+## 2026-09-24: TMC2208 on Y, PASS (with caveats)
+
+- A standalone TMC2208 replaced the DRV8825 in the Y slot, with the same shield jumpers (MS1+MS2 fitted, so **1/16 microstepping, 3200 steps/rev**). `[JOINT_1] SCALE` is now 3200; X and Z stay at 6400 for the DRV8825.
+- Scale check: 1600 steps turned the shaft 180°. After the change, `G91 G1 Y1 F30` / `Y-1` made exactly one turn and came back to a shaft mark. The step count returned to 0, and the link had 0 late, 0 errors, 0 bad frames.
+- **Stalls at speed:** with the old scale, F300 actually ran about 5 rev/s and the motor stalled a few times near peak. That is the configured Y maximum, so Vref (current) and/or Y `MAX_VELOCITY` still need tuning. StealthChop (the standalone default) loses torque at speed.
+- The UNO Q drives 3.3 V logic, and the TMC2208 wants 0.7 × VIO = 3.5 V from the shield's 5 V rail. It works on the bench but is out of spec.
+- **Gotcha:** `lcnc-ctl restart` let systemd SIGKILL AXIS after the 30 s stop timeout. That left `/tmp/linuxcnc.lock`, and the next start waited on an invisible Tk dialog. After clearing the lock, task still hung in `exec_state 7` and ignored MDI and abort. A clean stop (`axis-remote --quit`) and a fresh start fixed it.
+
 ### Next
 - Get the per-transfer overhead down further: 5 IRQs per frame in FIFO mode. Options are GPI DMA mode, or a single transfer with CS handled in hardware.
 - Set real SCALE (steps/mm) and limits once the microstepping jumpers and mechanics are known.

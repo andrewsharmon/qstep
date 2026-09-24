@@ -7,7 +7,8 @@ QStep has only been tested in this configuration:
 - **one axis, one stepper motor** (joint 1 / Y), running free on the bench, not on a
   machine axis;
 - a generic Arduino **"CNC SHIELD" Ver 3.00** (GRBL pinout) on the UNO Q header;
-- **DRV8825** driver module only, at 1/32 microstepping;
+- **DRV8825** driver module at 1/32 microstepping, and a **TMC2208** (standalone,
+  1/16) on Y;
 - Arduino UNO Q **2 GB / 16 GB**, Arduino image **20250807-136**, networking through
   a USB proxy (no Wi-Fi), AXIS viewed over VNC.
 
@@ -37,8 +38,10 @@ coolant outputs) is wired up but **untested**.
   realistic accelerations.
 - [ ] **Millimetre units:** set `SCALE = steps_per_rev x microsteps / mm_per_rev` per
   axis once the mechanics are known, plus real limits and speeds.
-- [ ] **Other drivers:** A4988 and TMC2208/2209 need a logic high of 0.7 x VDD, so
-  feed the shield's "5V" rail from 3.3 V. Also test external step/dir drivers.
+- [ ] **Other drivers:** TMC2208 standalone runs on Y at 1/16 (3200 steps/rev),
+  but stalls near 5 rev/s: tune Vref and the Y speed limit. A4988 and TMC2208/2209
+  need a logic high of 0.7 x VDD, so feed the shield's "5V" rail from 3.3 V. Also
+  test TMC2209 and external step/dir drivers.
 - [ ] Scope the STEP/DIR pins to confirm pulse width, direction setup and jitter.
 - [ ] UNO Q 4 GB model; HDMI through a USB-C dock (monitor, keyboard, mouse)
   instead of VNC.
