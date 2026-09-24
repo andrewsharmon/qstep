@@ -172,6 +172,15 @@ Logs are in `docs/soak/2026-09-24-overnight/` (per-block CSV and log, plus the M
 - **Link: 0 late, 0 errors, 0 MCU bad frames** over about 36 M frames. **0 watchdog trips.** No MCU resets (no boot banner in the console log).
 - Memory flat: rtapi_app 59.2 MB, milltask 18.7 MB, AXIS 199→201 MB (settles after the first blocks). No leak.
 
+## 2026-09-24: Real two-step install test (fresh board), PASS
+
+1. **Step 1:** `arduino-flasher-cli` 0.5.4 flashed Arduino's official image 20250807-136 (35 partitions). The first attempt failed partway with `qdl: bulk write failed` after the jumper had been placed on the wrong pins (my description was wrong; `dist/README.md` now has a diagram that follows Arduino's photo). The retry, from a locally cached copy of the image, succeeded. The board then booted a clean stock system: kernel 6.16.0-geffa, no ArduCNC, arduino-router active, 3.2 GB free after the flasher grew the rootfs.
+2. **Step 2:** `sh arducnc-bootstrap.sh --bundle arducnc-0.1.0-rc1.tar.gz` over `adb shell`, with the Mac proxy standing in for Wi-Fi. It passed the base check, verified the bundle, and installed the packages, the RT kernel, the system services, the HAL driver and the config. It backed up the STM32 and flashed the firmware (`Verified OK`). **Bug found:** adb exports `TMPDIR=/data/local/tmp`, which doesn't exist here, so apt-listchanges errored (non-fatal). The bootstrap now falls back to /tmp (`ecbf667`).
+3. **After a power cycle:** it booted `6.16.0-rt-arducnc2 #1 PREEMPT_RT` (the neutral build) and blessed the entry. isolcpus=3. All ArduCNC services active, arduino-router inactive, no failed units. rtapi RT thread at FIFO 98 on CPU3, SPI worker at FIFO 97. AXIS came up by itself. Link connected with 0 errors.
+4. **Motion:** `hold-test.py` (0 count changes at sub-step targets) and `soak-test.py`: 45 moves, max following error 7.3 steps, back at start with 0 steps difference, link 0 late and 0 errors, servo tmax 349 µs.
+
+Note: the STM32 isn't touched by the Linux flasher, so on this board the "stock" backup the installer took is a copy of the earlier ArduCNC firmware. The real stock image is in `../arducnc-private`.
+
 ### Next
 - Get the per-transfer overhead down further: 5 IRQs per frame in FIFO mode. Options are GPI DMA mode, or a single transfer with CS handled in hardware.
 - Set real SCALE (steps/mm) and limits once the microstepping jumpers and mechanics are known.
