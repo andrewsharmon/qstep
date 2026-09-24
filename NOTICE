@@ -1,6 +1,18 @@
 QStep: LinuxCNC on the Arduino UNO Q
 Copyright (C) 2026 andrewsharmon
 
+Credits
+=======
+
+QStep glues together the work of many others: LinuxCNC; Arduino (UNO Q
+hardware, Debian image, linux-qcom kernel, Zephyr fork, ArduinoCore-zephyr,
+OpenOCD setup, Flasher CLI); the Linux kernel, PREEMPT_RT and Qualcomm/Linaro
+mainline developers; Zephyr, STMicroelectronics and Arm CMSIS; Remora (Scott
+Alford) and the Mesa/LinuxCNC stepgen design, whose ideas are reused but not
+their code; Debian, OpenOCD and Lima. Much of QStep was developed with
+Claude (Anthropic) as an AI coding assistant. See "Standing on the shoulders
+of giants" in README.md.
+
 Licensing
 =========
 

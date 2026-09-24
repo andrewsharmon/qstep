@@ -32,6 +32,38 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
 Building from source needs the Lima VM (Debian 13 arm64), the Zephyr SDK and the
 `vendor/` clones, which aren't committed. See the bring-up log for the exact steps.
 
+## Standing on the shoulders of giants
+
+QStep is mostly glue. Nearly all the hard work was done by other people and
+projects, and QStep only connects their work on one small board:
+
+- **[LinuxCNC](https://linuxcnc.org)** and its community: the motion controller,
+  trajectory planner, HAL, AXIS GUI and decades of CNC know-how that QStep simply
+  runs. The Debian `linuxcnc-uspace` packages are used unmodified.
+- **[Arduino](https://www.arduino.cc)**: the UNO Q hardware, its Debian image,
+  the [UNO Q Linux kernel](https://github.com/arduino/linux-qcom), the
+  [Zephyr fork and board support](https://github.com/arduino/zephyr),
+  [ArduinoCore-zephyr](https://github.com/arduino/ArduinoCore-zephyr) (its LED
+  matrix pin map is reused here), the on-board OpenOCD SWD setup and the
+  [Flasher CLI](https://github.com/arduino/arduino-flasher-cli).
+- **The Linux kernel and PREEMPT_RT developers**, and the Qualcomm/Linaro mainline
+  work on the QRB2210 (`linux-msm`), including the GENI SPI driver that QStep
+  patches in one line.
+- **[Zephyr RTOS](https://zephyrproject.org)**, **STMicroelectronics** (STM32Cube
+  HAL/LL) and **Arm CMSIS**, which make up the STM32 firmware's foundation.
+- **[Remora](https://github.com/scottalford75/Remora)** by Scott Alford, and the
+  Mesa/LinuxCNC stepgen design: the model for SPI-linked step generation with a
+  host-side position loop. No Remora code is used; the ideas are.
+- **[Debian](https://www.debian.org)**, **[OpenOCD](https://openocd.org)**,
+  **[Lima](https://lima-vm.io)** and the many other free software tools used
+  to build and test QStep.
+- **AI assistance:** much of the code, testing and documentation was developed
+  with **Claude (Anthropic)** as a coding assistant, working under the author's
+  direction; commits carry a `Co-Authored-By: Claude` trailer.
+
+All trademarks belong to their owners, and QStep isn't affiliated with or
+endorsed by any of these projects or companies. See [NOTICE](NOTICE).
+
 ## License
 
 Copyright (C) 2026 andrewsharmon.

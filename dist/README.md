@@ -68,7 +68,7 @@ computer: `adb shell`, or `sudo -i` in a terminal on the board), download the
 bootstrap script from the release, and run it:
 
 ```bash
-curl -fsSLO https://github.com/OWNER/qstep/releases/download/vX.Y/qstep-bootstrap.sh
+curl -fsSLO https://github.com/andrewsharmon/qstep/releases/download/v<version>/qstep-bootstrap.sh
 sh qstep-bootstrap.sh
 ```
 

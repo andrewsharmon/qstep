@@ -13,7 +13,7 @@
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 VER=${1:?usage: make-release.sh <version> [release-url]}
-REPO=${QSTEP_REPO:-OWNER/qstep}
+REPO=${QSTEP_REPO:-andrewsharmon/qstep}
 URL=${2:-https://github.com/$REPO/releases/download/v$VER}
 OUT=$ROOT/release/$VER
 
