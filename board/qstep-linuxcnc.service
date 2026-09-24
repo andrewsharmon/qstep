@@ -9,11 +9,16 @@ After=qstep-xvfb.service qstep-rt-tune.service
 User=arduino
 WorkingDirectory=/home/arduino/qstep-config
 Environment=HOME=/home/arduino DISPLAY=:1 LINUXCNC_FORCE_REALTIME=1
+# Clear a lock left by a killed instance, or linuxcnc blocks on an unseen Tk dialog.
+ExecStartPre=/usr/local/bin/lcnc-ctl clean-stale
 ExecStart=/usr/bin/linuxcnc /home/arduino/qstep-config/unoq-shield.ini
 # Closing AXIS ends LinuxCNC; bring it straight back.
 Restart=always
 RestartSec=3
-# Let the linuxcnc script run its own cleanup (unload RT, etc.) on stop.
+# AXIS ignores SIGTERM, so quit it through axis-remote and wait for the
+# linuxcnc script's own cleanup (unload RT, remove the lock). SIGTERM to the
+# script (KillMode=mixed) is only the fallback.
+ExecStop=/usr/local/bin/lcnc-ctl quit-gui
 KillMode=mixed
 TimeoutStopSec=30
 

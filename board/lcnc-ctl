@@ -7,9 +7,12 @@
 #   lcnc-ctl restart
 #   lcnc-ctl start-headless   stop the service and run the no-GUI config (for scripted tests)
 #   lcnc-ctl run <cmd...>     run a command as the arduino user in the config dir
+#   lcnc-ctl quit-gui|clean-stale   used by qstep-linuxcnc.service (ExecStop/ExecStartPre)
 CFG=/home/arduino/qstep-config
 AS_ARDUINO="setpriv --reuid=arduino --regid=arduino --init-groups env HOME=/home/arduino DISPLAY=:1 LINUXCNC_FORCE_REALTIME=1"
 SERVICE=qstep-linuxcnc
+LOCKFILE=/tmp/linuxcnc.lock
+LCNC_PROCS='linuxcnc|linuxcncsvr|milltask|io|rtapi_app|axis'
 
 wait_up() {
 	for i in $(seq 1 90); do
@@ -39,8 +42,41 @@ stop_manual() {
 	[ -n "$pid" ] && kill $pid
 }
 
+quit_gui() {
+	# AXIS ignores SIGTERM, and the linuxcnc script only runs its SIGTERM trap
+	# after AXIS (its foreground child) exits, so a plain stop hangs until
+	# systemd's SIGKILL and leaves the lock behind. Ask AXIS to quit instead;
+	# linuxcnc then does its normal cleanup and exits. Runs as arduino (ExecStop).
+	axis-remote --ping 2>/dev/null && axis-remote --quit
+	for i in $(seq 1 10); do
+		pgrep -x axis >/dev/null || break
+		sleep 1
+	done
+	# AXIS hung: kill just the GUI so linuxcnc still cleans up.
+	pgrep -x axis >/dev/null && pkill -KILL -x axis
+	for i in $(seq 1 20); do
+		[ -n "$MAINPID" ] && kill -0 "$MAINPID" 2>/dev/null || return 0
+		sleep 1
+	done
+}
+
+clean_stale() {
+	# A lock with no LinuxCNC running (e.g. after a SIGKILL) makes linuxcnc
+	# ask "still running, restart?" in a Tk dialog on :1 that nobody sees.
+	[ -f $LOCKFILE ] || return 0
+	if pgrep -x "$LCNC_PROCS" >/dev/null; then
+		echo "LinuxCNC is already running (headless instance?); run lcnc-ctl stop first"
+		return 1
+	fi
+	echo "removing stale $LOCKFILE and unloading leftover HAL/RTAPI"
+	run=; [ "$(id -u)" = 0 ] && run=$AS_ARDUINO
+	$run halrun -U
+	rm -f $LOCKFILE
+}
+
 case "$1" in
 start)
+	# The unit's ExecStartPre runs clean-stale on every (re)start.
 	systemctl start $SERVICE && wait_up
 	;;
 stop)
@@ -53,6 +89,7 @@ restart)
 	;;
 start-headless)
 	"$0" stop >/dev/null
+	clean_stale || exit 1
 	cd "$CFG" || exit 1
 	$AS_ARDUINO linuxcnc unoq-shield-headless.ini > /tmp/lcnc.log 2>&1 &
 	wait_up
@@ -61,8 +98,14 @@ run)
 	shift
 	cd "$CFG" && exec $AS_ARDUINO "$@"
 	;;
+quit-gui)
+	quit_gui
+	;;
+clean-stale)
+	clean_stale
+	;;
 *)
-	sed -n '4,9p' "$0"
+	sed -n '4,10p' "$0"
 	exit 2
 	;;
 esac
