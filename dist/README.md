@@ -17,6 +17,9 @@ paths), so they don't carry any builder's user name or directories.
 
 ## Install (two steps)
 
+Only tested with one axis and one stepper, a generic "CNC SHIELD" Ver 3.00 and a
+DRV8825 module (see [TODO.md](../TODO.md)).
+
 **Step 1: flash Arduino's official image** with Arduino's own
 [Flasher CLI](https://docs.arduino.cc/software/app-lab/configure/flash/). QStep's
 RT kernel is built for exactly this release:

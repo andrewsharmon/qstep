@@ -11,6 +11,11 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
     (SPI in its own RT worker thread)             LED matrix: "Linux" over "CNC"
 ```
 
+> **Tested scope (v0.1.0):** QStep has only been tested with **one axis and one
+> stepper motor** (on the bench), a generic Arduino **"CNC SHIELD" Ver 3.00**, and
+> a **DRV8825** driver module. Other axes, drivers, inputs and outputs are wired
+> up but untested. See [TODO.md](TODO.md).
+
 - **Status and measurements:** [docs/BRINGUP_LOG.md](docs/BRINGUP_LOG.md)
 - **Original feasibility study:** [docs/PORTING_ASSESSMENT.md](docs/PORTING_ASSESSMENT.md)
 - **Install (no build tools needed):** flash Arduino's official image 20250807-136 with
