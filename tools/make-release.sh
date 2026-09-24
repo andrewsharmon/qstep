@@ -35,8 +35,10 @@ cp -R board configs README.md "$STAGE/"
 	echo "base image: Arduino UNO Q Debian 20250807-136"
 } > "$STAGE/VERSION"
 
-# Reproducible-ish tarball: fixed owner, no macOS metadata.
-COPYFILE_DISABLE=1 tar -C "$STAGE" --uid 0 --gid 0 --uname root --gname root -czf "$OUT/arducnc-$VER.tar.gz" .
+# Reproducible-ish tarball: fixed owner, no macOS metadata/xattrs (Linux tar warns on them).
+xattr -rc "$STAGE" 2>/dev/null || true
+COPYFILE_DISABLE=1 tar -C "$STAGE" --no-xattrs --no-mac-metadata --uid 0 --gid 0 \
+	--uname root --gname root -czf "$OUT/arducnc-$VER.tar.gz" .
 (cd "$OUT" && shasum -a 256 "arducnc-$VER.tar.gz" > "arducnc-$VER.tar.gz.sha256")
 
 sed -e "s|@VERSION@|$VER|" -e "s|@RELEASE_URL@|$URL|" board/bootstrap.sh > "$OUT/arducnc-bootstrap.sh"
