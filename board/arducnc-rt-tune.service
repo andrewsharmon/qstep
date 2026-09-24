@@ -1,0 +1,11 @@
+[Unit]
+Description=ArduCNC boot setup (MCU BOOT0 low, SPI IRQ on isolated CPU, no runtime PM)
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/arducnc-rt-tune
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

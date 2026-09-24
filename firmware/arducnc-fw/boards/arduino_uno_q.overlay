@@ -1,0 +1,42 @@
+/*
+ * ArduCNC firmware for the UNO Q STM32U585 (CNC Shield v3 pinout).
+ * SPI3 (internal link to the QRB2210 spi5 / spidev0.0) runs as a DMA slave.
+ * GPDMA1 request lines on the U5: SPI3_RX = 10, SPI3_TX = 11.
+ */
+#include <zephyr/dt-bindings/dma/stm32_dma.h>
+
+/ {
+	chosen {
+		/* LPUART1 is wired to the Linux side (/dev/ttyHS1), so our log is
+		 * readable from the MPU once arduino-router is stopped. */
+		zephyr,console = &lpuart1;
+		zephyr,shell-uart = &lpuart1;
+	};
+
+	zephyr,user {
+		rdy-gpios = <&gpiog 13 GPIO_ACTIVE_HIGH>; /* "Internal SPI RDY" */
+	};
+};
+
+&gpdma1 {
+	status = "okay";
+};
+
+&spi3 {
+	status = "okay";
+	dmas = <&gpdma1 2 11 STM32_DMA_PERIPH_TX>,
+	       <&gpdma1 3 10 STM32_DMA_PERIPH_RX>;
+	dma-names = "tx", "rx";
+};
+
+/* TIM17 scans the charlieplexed LED matrix at the lowest IRQ priority so it
+ * can never delay the SPI link (or, later, step generation). */
+&timers17 {
+	status = "okay";
+	st,prescaler = <4>;
+	interrupts = <71 7>;
+
+	counter_matrix: counter {
+		status = "okay";
+	};
+};

@@ -1,0 +1,27 @@
+From: ArduCNC <noreply@example.invalid>
+Subject: [PATCH] spi: geni-qcom: don't reprogram the clock in prepare_message
+
+setup_fifo_params() (called from prepare_message for every message) sets the
+serial clock to spi->max_speed_hz, and setup_se_xfer() then sets it again to
+xfer->speed_hz for every transfer. With spidev, SPI_IOC_WR_MAX_SPEED_HZ only
+changes spidev's own speed, so max_speed_hz stays at the 50 MHz controller
+default and the rate flips twice per message. Each flip also updates the
+interconnect bandwidth vote through the RPM, which costs ~2.3 ms per message
+on QRB2210 (Arduino UNO Q) and makes 1 kHz real-time SPI impossible.
+
+The per-transfer path always programs the right rate, so drop the redundant
+call in setup_fifo_params().
+---
+diff --git a/drivers/spi/spi-geni-qcom.c b/drivers/spi/spi-geni-qcom.c
+index 768d748210..23d4b2b57b 100644
+--- a/drivers/spi/spi-geni-qcom.c
++++ b/drivers/spi/spi-geni-qcom.c
+@@ -428,7 +428,7 @@ static int setup_fifo_params(struct spi_device *spi_slv,
+ 		mas->last_mode = spi_slv->mode;
+ 	}
+ 
+-	return geni_spi_set_clock_and_bw(mas, spi_slv->max_speed_hz);
++	return 0;
+ }
+ 
+ static void

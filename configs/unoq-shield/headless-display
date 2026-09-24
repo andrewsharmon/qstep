@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stand-in "display" for headless bring-up: LinuxCNC runs until this exits.
+exec sleep infinity

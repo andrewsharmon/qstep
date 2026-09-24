@@ -1,0 +1,66 @@
+#!/bin/sh
+# Control the ArduCNC LinuxCNC instance on the UNO Q (run from an adb root shell).
+#   lcnc-ctl start            start the AXIS service (auto-restarts when AXIS is closed)
+#   lcnc-ctl stop             stop LinuxCNC (service or a manual headless instance)
+#   lcnc-ctl restart
+#   lcnc-ctl start-headless   stop the service and run the no-GUI config (for scripted tests)
+#   lcnc-ctl run <cmd...>     run a command as the arduino user in the config dir
+CFG=/home/arduino/arducnc-config
+AS_ARDUINO="setpriv --reuid=arduino --regid=arduino --init-groups env HOME=/home/arduino DISPLAY=:1 LINUXCNC_FORCE_REALTIME=1"
+SERVICE=arducnc-linuxcnc
+
+wait_up() {
+	for i in $(seq 1 90); do
+		sleep 1
+		if pgrep -x milltask >/dev/null && { pgrep -fx "sleep infinity" || pgrep -f "^/usr/bin/python3 /usr/bin/axis -ini"; } >/dev/null; then
+			sleep 2
+			echo "linuxcnc up"
+			return 0
+		fi
+	done
+	echo "linuxcnc did not start; see journalctl -u $SERVICE or /tmp/lcnc.log"
+	return 1
+}
+
+wait_down() {
+	for i in $(seq 1 30); do
+		pgrep -x milltask >/dev/null || { echo "linuxcnc stopped"; return 0; }
+		sleep 1
+	done
+	echo "linuxcnc still running"
+	return 1
+}
+
+stop_manual() {
+	# A manual (headless) instance: ending its display makes linuxcnc shut down.
+	pid=$(pgrep -fx "sleep infinity")
+	[ -n "$pid" ] && kill $pid
+}
+
+case "$1" in
+start)
+	systemctl start $SERVICE && wait_up
+	;;
+stop)
+	systemctl stop $SERVICE
+	stop_manual
+	wait_down
+	;;
+restart)
+	"$0" stop && "$0" start
+	;;
+start-headless)
+	"$0" stop >/dev/null
+	cd "$CFG" || exit 1
+	$AS_ARDUINO linuxcnc unoq-shield-headless.ini > /tmp/lcnc.log 2>&1 &
+	wait_up
+	;;
+run)
+	shift
+	cd "$CFG" && exec $AS_ARDUINO "$@"
+	;;
+*)
+	sed -n '2,8p' "$0"
+	exit 2
+	;;
+esac

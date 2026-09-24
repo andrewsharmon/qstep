@@ -1,0 +1,19 @@
+# Upstream sources (re-clone; see docs/PORTING_ASSESSMENT.md section 5)
+/vendor/
+
+# Downloaded tools (re-download: adb platform-tools, Lima release)
+/tools/platform-tools/
+/tools/bin/
+/tools/share/
+/tools/libexec/
+/tools/debs/
+
+# Build outputs (released binaries live in dist/)
+/kernel/out/
+/kernel/build.log
+/firmware/*/*.elf
+/hal/*.so
+/tools/spitest/spitest
+
+.DS_Store
+*.ppm

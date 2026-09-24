@@ -1,0 +1,19 @@
+[Unit]
+Description=ArduCNC LinuxCNC (AXIS on the VNC display :1); restarts when AXIS is closed
+Requires=arducnc-xvfb.service
+After=arducnc-xvfb.service arducnc-rt-tune.service
+
+[Service]
+User=arduino
+WorkingDirectory=/home/arduino/arducnc-config
+Environment=HOME=/home/arduino DISPLAY=:1 LINUXCNC_FORCE_REALTIME=1
+ExecStart=/usr/bin/linuxcnc /home/arduino/arducnc-config/unoq-shield.ini
+# Closing AXIS ends LinuxCNC; bring it straight back.
+Restart=always
+RestartSec=3
+# Let the linuxcnc script run its own cleanup (unload RT, etc.) on stop.
+KillMode=mixed
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

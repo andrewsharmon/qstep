@@ -1,0 +1,42 @@
+# First motion test: Y joint (unoq.1) moves +400 steps and back, in raw steps.
+loadrt threads name1=servo period1=1000000 fp1=1
+loadrt unoq_spi spi_speed=20000000
+loadrt limit3
+
+addf limit3.0    servo
+addf unoq.update servo
+
+setp limit3.0.maxv 1000
+setp limit3.0.maxa 5000
+setp unoq.1.position-scale 1
+setp unoq.1.maxvel 1500
+setp unoq.1.maxaccel 20000
+
+net y-cmd limit3.0.out => unoq.1.position-cmd
+
+start
+loadusr -w sleep 0.5
+show pin unoq.connected
+setp unoq.1.enable 1
+setp unoq.enable 1
+loadusr -w sleep 0.2
+show pin unoq.enabled
+
+setp limit3.0.in 400
+loadusr -w sleep 1.5
+show pin unoq.1.counts
+show pin unoq.1.position-fb
+
+setp limit3.0.in 0
+loadusr -w sleep 1.5
+show pin unoq.1.counts
+show pin unoq.1.position-fb
+
+setp unoq.enable 0
+loadusr -w sleep 0.1
+show pin unoq.link-errors
+show pin unoq.mcu-bad-frames
+show pin unoq.isr-max-us
+show pin unoq.watchdog
+show pin unoq.input
+stop

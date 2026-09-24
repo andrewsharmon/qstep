@@ -1,0 +1,4 @@
+# ArduCNC: let LinuxCNC (runs as the arduino user, group gpiod) reach the
+# on-board STM32 link and keep CPUs out of deep idle while it runs.
+KERNEL=="spidev0.0", GROUP="gpiod", MODE="0660"
+KERNEL=="cpu_dma_latency", GROUP="gpiod", MODE="0660"

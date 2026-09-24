@@ -1,0 +1,11 @@
+[Unit]
+Description=ArduCNC virtual display :1 (for AXIS over VNC)
+
+[Service]
+User=arduino
+ExecStart=/usr/bin/Xvfb :1 -screen 0 1280x800x24 -nolisten tcp
+Restart=on-failure
+CPUAffinity=0-2
+
+[Install]
+WantedBy=multi-user.target

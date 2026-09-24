@@ -1,0 +1,23 @@
+#!/bin/sh
+# Boot-time setup and real-time tuning for ArduCNC on the UNO Q (RT kernel, isolcpus=3).
+# - The MCU link's SPI controller (GENI SE @4a94000) interrupt and its IRQ thread
+#   run on the isolated CPU3 next to the LinuxCNC servo thread.
+# - Keep the controller powered (no runtime-PM resume on the servo path).
+SPI_DEV=/sys/devices/platform/soc@0/4ac0000.geniqup/4a94000.spi
+
+# Hold the STM32's BOOT0 low (gpiochip1 line 37) so it boots from flash, not
+# the ST ROM bootloader. arduino-router normally does this in ExecStartPre;
+# we have that service disabled.
+gpioset -c /dev/gpiochip1 -t0 37=0
+
+echo on > "$SPI_DEV/power/control" 2>/dev/null
+
+irq=$(awk -F: '/4a94000\.spi/ {gsub(/ /, "", $1); print $1}' /proc/interrupts)
+if [ -n "$irq" ]; then
+	echo 3 > "/proc/irq/$irq/smp_affinity_list"
+	pid=$(pgrep -f "irq/$irq-4a94000.spi")
+	[ -n "$pid" ] && chrt -f -p 85 "$pid"
+fi
+pid=$(pgrep -x spi0)
+[ -n "$pid" ] && chrt -f -p 85 "$pid"
+exit 0

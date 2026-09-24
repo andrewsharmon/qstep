@@ -1,0 +1,8 @@
+( ArduCNC demo: units are motor revolutions until SCALE is set for the mechanics )
+G90 G94
+G0 Y0
+G1 Y2 F120      ( 2 rev at 2 rev/s )
+G0 Y0
+G1 Y-1 F60
+G0 Y0
+M2

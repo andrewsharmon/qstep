@@ -1,0 +1,21 @@
+#!/bin/sh
+# Launch the unattended soak as transient systemd units (survive adb disconnects).
+#   soak-start [hours] [block-min]
+# Logs: /home/arduino/arducnc-config/soak/ (CSV + log), MCU console in soak/mcu-*.log
+# Status: systemctl status arducnc-soak ; stop: systemctl stop arducnc-soak
+# (the MCU logger is bound to the soak unit and stops with it).
+HOURS=${1:-10}
+BLOCK=${2:-10}
+CFG=/home/arduino/arducnc-config
+OUT=$CFG/soak
+mkdir -p $OUT && chown arduino:arduino $OUT
+systemctl stop arducnc-soak arducnc-soak-mcu 2>/dev/null
+systemctl reset-failed arducnc-soak arducnc-soak-mcu 2>/dev/null
+STAMP=$(date +%Y%m%d-%H%M)
+systemd-run --unit=arducnc-soak --collect -p User=arduino -p WorkingDirectory=$CFG \
+	-p KillSignal=SIGTERM -p TimeoutStopSec=20 \
+	-E HOME=/home/arduino -E DISPLAY=:1 \
+	/usr/bin/python3 $CFG/soak-overnight.py --hours "$HOURS" --block-min "$BLOCK" --out $OUT
+systemd-run --unit=arducnc-soak-mcu --collect \
+	-p BindsTo=arducnc-soak.service -p After=arducnc-soak.service \
+	sh -c "stty -F /dev/ttyHS1 115200 raw -echo; exec cat /dev/ttyHS1 > $OUT/mcu-$STAMP.log"

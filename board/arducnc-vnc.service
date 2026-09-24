@@ -1,0 +1,18 @@
+[Unit]
+Description=ArduCNC VNC server for display :1 (localhost only; reach it via adb forward)
+Requires=arducnc-xvfb.service
+After=arducnc-xvfb.service
+
+[Service]
+User=arduino
+# Bound to 127.0.0.1: only reachable through `adb forward tcp:5900 tcp:5900`.
+# Uses VNC password auth if /etc/arducnc/vnc.pass exists (macOS Screen Sharing
+# requires it); create it with:  x11vnc -storepasswd /etc/arducnc/vnc.pass
+ExecStartPre=/bin/sleep 1
+ExecStart=/bin/sh -c 'if [ -r /etc/arducnc/vnc.pass ]; then AUTH="-rfbauth /etc/arducnc/vnc.pass"; else AUTH=-nopw; fi; exec /usr/bin/x11vnc -display :1 -localhost -rfbport 5900 -forever -shared -quiet $AUTH'
+Restart=on-failure
+# Keep GUI serving off the real-time core.
+CPUAffinity=0-2
+
+[Install]
+WantedBy=multi-user.target
