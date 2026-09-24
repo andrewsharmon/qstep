@@ -156,6 +156,22 @@ The clock-switch penalty is gone at every speed. What's left is about 150–180 
 - The dry run caught three script bugs: a fixed 30 s move timeout (an F6 move over 4 rev takes about 40 s), the MCU-logger stop hook running as the unprivileged user, and stopping mid-move leaving the machine running. All fixed and re-verified.
 - **Started 2026-09-24 06:17 UTC, 10 h.** Dry-run blocks: count error 0, late 0, link errors 0, servo tmax 236–454 µs (the higher values under hackbench), 53–54 °C.
 
+### Overnight soak result (2026-09-24 06:17–16:17 UTC, 60 × 10-min blocks), PASS
+Logs are in `docs/soak/2026-09-24-overnight/` (per-block CSV and log, plus the MCU console, gzipped).
+
+| Metric (per block) | min | median | max |
+|---|---|---|---|
+| following error (steps) | 8.8 | 11.8 | **34.5** (0.0054 rev; limit ≥ 64) |
+| servo-thread tmax (µs, period 1000) | 267 | 360 | **483** |
+| motion-controller tmax (µs) | 202 | 266 | 380 |
+| unoq.update tmax (µs) | 82 | 128 | 177 |
+| MCU stepgen ISR max (µs) | 2.24 | 2.24 | 2.24 |
+| temperature (°C) | 49.2 | 53.5 | 54.8 |
+
+- **15,754 moves** (G0, G1 at F6–300, jogs) with 60 s of hackbench per block. **Returned to the start step exactly in all 60 blocks** (0 count error).
+- **Link: 0 late, 0 errors, 0 MCU bad frames** over about 36 M frames. **0 watchdog trips.** No MCU resets (no boot banner in the console log).
+- Memory flat: rtapi_app 59.2 MB, milltask 18.7 MB, AXIS 199→201 MB (settles after the first blocks). No leak.
+
 ### Next
 - Get the per-transfer overhead down further: 5 IRQs per frame in FIFO mode. Options are GPI DMA mode, or a single transfer with CS handled in hardware.
 - Set real SCALE (steps/mm) and limits once the microstepping jumpers and mechanics are known.
