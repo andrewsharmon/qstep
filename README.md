@@ -13,7 +13,8 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
 
 - **Status and measurements:** [docs/BRINGUP_LOG.md](docs/BRINGUP_LOG.md)
 - **Original feasibility study:** [docs/PORTING_ASSESSMENT.md](docs/PORTING_ASSESSMENT.md)
-- **Install prebuilt files onto a board:** [dist/README.md](dist/README.md) (`tools/deploy.sh --all`)
+- **Install (no build tools needed):** flash Arduino's official image 20250807-136 with
+  `arduino-flasher-cli`, then run `arducnc-bootstrap.sh` on the board. See [dist/README.md](dist/README.md).
 
 | Path | Contents |
 |---|---|
@@ -25,7 +26,8 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
 | `configs/unoq-shield/` | LinuxCNC machine config (AXIS + headless) and test scripts |
 | `board/` | Board-side installer, systemd units, udev rules, helper scripts |
 | `kernel/` | RT kernel config fragment, GENI SPI patch, build script, stock config |
-| `tools/` | `deploy.sh`, `mcu-build-flash.sh`, `spitest` |
+| `tools/` | `make-release.sh`, `deploy.sh`, `mcu-build-flash.sh`, `spitest` |
+| `image/` | Single flashable image builder (local or private use only; not published) |
 
 Building from source needs the Lima VM (Debian 13 arm64), the Zephyr SDK and the
 `vendor/` clones, which aren't committed. See the bring-up log for the exact steps.

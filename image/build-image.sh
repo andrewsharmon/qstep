@@ -1,6 +1,11 @@
 #!/bin/bash
 # Build a flashable ArduCNC image for the Arduino UNO Q.
 #
+# FOR LOCAL / PRIVATE USE ONLY. The result contains Arduino's complete software
+# image and Qualcomm boot firmware, which ArduCNC doesn't redistribute. The public
+# install path is the two-step install in dist/README.md (Arduino's own image, then
+# board/bootstrap.sh).
+#
 # Takes Arduino's official Debian image (the release whose kernel our RT kernel
 # is built from), installs everything from dist/ into it with
 # `IMAGE=1 board/install.sh` in an arm64 chroot, and repackages it in the same

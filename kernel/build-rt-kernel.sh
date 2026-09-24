@@ -41,7 +41,11 @@ make olddefconfig >/dev/null
 echo "== RT-relevant config =="
 grep -E '^CONFIG_(PREEMPT_RT|PREEMPT|HZ|NO_HZ_FULL|RCU_NOCB_CPU|CPU_FREQ_DEFAULT_GOV_PERFORMANCE)=' .config
 
-time make -j"$(nproc)" LOCALVERSION= KDEB_PKGVERSION=1 bindeb-pkg
+# Neutral build identity (no local user/host names in uname -v or the .deb).
+export KBUILD_BUILD_USER=arducnc KBUILD_BUILD_HOST=arducnc KBUILD_BUILD_VERSION=1
+export KBUILD_BUILD_TIMESTAMP="${KBUILD_BUILD_TIMESTAMP:-$(git -C "$PROJ" log -1 --format=%cd --date=rfc 2>/dev/null || date -R)}"
+export DEBEMAIL="noreply@arducnc.invalid" DEBFULLNAME="ArduCNC"
+time make -j"$(nproc)" LOCALVERSION= KDEB_PKGVERSION="${KDEB_PKGVERSION:-1}" bindeb-pkg
 cp -v ../linux-image-*-rt-arducnc*.deb ../linux-headers-*-rt-arducnc*.deb "$OUT"/ 2>/dev/null || true
 cp .config "$OUT/config-rt-arducnc"
 ls -la "$OUT"

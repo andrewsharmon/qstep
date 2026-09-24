@@ -56,7 +56,7 @@ step_packages() {
 
 step_kernel() {
 	echo "== kernel $KVER"
-	deb=$DIST/kernel/linux-image-${KVER}_1_arm64.deb
+	deb=$(ls $DIST/kernel/linux-image-${KVER}_*_arm64.deb | tail -1)
 	[ -f "$deb" ] || { echo "missing $deb"; exit 1; }
 	# Keep the stock kernel and meta package from being replaced by updates.
 	run "apt-mark hold linux-image-arm64 \$(dpkg-query -W -f='\${Package}\n' 'linux-image-6.16.0-g*' 2>/dev/null) >/dev/null || true"
