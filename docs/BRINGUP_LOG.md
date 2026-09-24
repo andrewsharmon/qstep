@@ -189,6 +189,12 @@ Logs are in `docs/soak/2026-09-24-overnight/` (per-block CSV and log, plus the M
 
 Note: the STM32 isn't touched by the Linux flasher, so on this board the "stock" backup the installer took is a copy of the earlier ArduCNC firmware. The real stock image is in `../arducnc-private`.
 
+## 2026-09-24: Rename to QStep, board migrated, PASS
+
+- Rebuilt with the new names. Kernel `6.16.0-rt-qstep1 (qstep@qstep)`, maintainer QStep; same source, config and patch. Firmware `qstep-fw`. HAL `unoq_spi.so` built against `qstep_proto.h`. No old name or local paths in any binary.
+- The board was migrated in place: old `arducnc-*` units, scripts, udev rule and folders removed, then `qstep-bootstrap.sh --bundle qstep-0.1.0-rc2.tar.gz` (firmware `Verified OK`, no TMPDIR error now), then a power cycle. It booted `rt-qstep1`, blessed. The old `rt-arducnc2` kernel was purged. Nothing named arducnc is left on the board.
+- Motion: hold-test 0 changes at sub-step targets. soak-test: 45 moves, max following error 8.6 steps, 0-step return error, link 0 late/0 errors, servo tmax 497 µs.
+
 ### Next
 - Get the per-transfer overhead down further: 5 IRQs per frame in FIFO mode. Options are GPI DMA mode, or a single transfer with CS handled in hardware.
 - Set real SCALE (steps/mm) and limits once the microstepping jumpers and mechanics are known.
