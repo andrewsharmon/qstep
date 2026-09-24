@@ -18,12 +18,47 @@ paths), so they don't carry any builder's user name or directories.
 ## Install (two steps)
 
 **Step 1: flash Arduino's official image** with Arduino's own
-[Flasher CLI](https://docs.arduino.cc/tutorials/uno-q/update-image/). ArduCNC's
+[Flasher CLI](https://docs.arduino.cc/software/app-lab/configure/flash/). ArduCNC's
 RT kernel is built for exactly this release:
 
 ```bash
 arduino-flasher-cli flash unoq --version 20250807-136
 ```
+
+The flasher needs the board in **EDL mode** (Qualcomm's download mode). Short the
+two **EDL pins** while plugging in the USB-C cable. Board seen from the component
+side, laid out like the photo in
+[Arduino's flashing guide](https://docs.arduino.cc/software/app-lab/configure/flash/):
+
+```
+  USB-C on the LEFT edge, LED matrix bottom-right
+
+  +------------------------------------------------------------------+
+  | [POWER]  JCTL           :::::::::::::::::::::::  (top header)    |
+  |  button  o o o (o) <--+                                          |
+  |          o o o (o) <--+-- EDL pins: right-most column of JCTL,   |
+  | +-----+                   one pin in each row. Short these two.  |
+  | |USB-C|                                                          |
+  | |     |                                                QWIIC     |
+  | +-----+                                                          |
+  |                                                                  |
+  |    ARDUINO                      +--------------------+           |
+  |     UNO Q                       |  LED matrix  13x8  |           |
+  |                                 +--------------------+           |
+  |            :::::::::::::::::::::::::  (bottom header)            |
+  +------------------------------------------------------------------+
+```
+
+1. Unplug the board. Put a jumper cap or a female-female jumper wire on the two EDL
+   pins, then plug the USB-C cable in. On a Mac the board then shows up as
+   `QUSB_BULK…` instead of `Uno Q`, and the flasher starts writing.
+2. Leave the jumper on until flashing finishes, then remove it and unplug/replug
+   the board to boot the new image.
+3. Connect the board **directly to a USB port on the computer**, not through a hub
+   or dock. Flashing through a hub can fail part-way with
+   `qdl: bulk write failed: Input/Output Error`. If that happens, stop the flasher and
+   repeat from 1. The EDL loader lives in the chip's ROM, so a failed flash can
+   always be retried.
 
 Go through Arduino's first-boot setup so the board has Wi-Fi (internet is needed
 for the Debian packages in step 2).
