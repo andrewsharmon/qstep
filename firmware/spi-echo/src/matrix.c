@@ -1,4 +1,9 @@
 /*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright (C) 2026 andrewsharmon
+ * Copyright (c) Arduino s.r.l. and/or its affiliated companies (LED matrix pin map, from ArduinoCore-zephyr loader/matrix.inc)
+ */
+/*
  * UNO Q 13x8 LED matrix: "Linux" scrolling over a fixed "CNC".
  *
  * The 104 LEDs are charlieplexed on PF0..PF10 and only one LED is lit at a

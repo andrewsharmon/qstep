@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 andrewsharmon
+ */
+/*
  * DDS step generation for up to QSTEP_JOINTS joints.
  *
  * TIM6 interrupts at QSTEP_BASE_FREQ_HZ (100 kHz). Each tick:

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 """Machine on, home, and run a G-code file in AUTO mode (while AXIS shows it)."""
 import sys
 import time

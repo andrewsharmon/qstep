@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # QStep installer, run ON the UNO Q as root, from a staged copy of this repo
 # (tools/deploy.sh stages it to /root/qstep-stage and runs this script).
 #
@@ -36,10 +38,10 @@ for a in "$@"; do
 	--dry-run) DRY=1 ;;
 	--all) STEPS="packages kernel system hal config firmware" ;;
 	--packages|--kernel|--system|--hal|--config|--firmware) STEPS="$STEPS ${a#--}" ;;
-	*) sed -n '2,20p' "$0"; exit 2 ;;
+	*) sed -n '4,24p' "$0"; exit 2 ;;
 	esac
 done
-[ -n "$STEPS" ] || { sed -n '2,20p' "$0"; exit 2; }
+[ -n "$STEPS" ] || { sed -n '4,24p' "$0"; exit 2; }
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
 
 run() {

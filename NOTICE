@@ -1,0 +1,69 @@
+QStep: LinuxCNC on the Arduino UNO Q
+Copyright (C) 2026 andrewsharmon
+
+Licensing
+=========
+
+QStep's own code, configuration and documentation are licensed under the GNU
+General Public License, version 2 or (at your option) any later version
+(SPDX: GPL-2.0-or-later). See COPYING and LICENSES/GPL-2.0-or-later.txt.
+Each source file states its license in an SPDX-License-Identifier line.
+
+Exceptions:
+
+- kernel/patches/*.patch modify the Linux kernel and are GPL-2.0-only,
+  like the kernel (LICENSES/GPL-2.0-only.txt).
+
+- firmware/*/src/matrix.c: the LED-matrix pin table is taken from
+  ArduinoCore-zephyr (loader/matrix.inc),
+  Copyright (c) Arduino s.r.l. and/or its affiliated companies,
+  licensed Apache-2.0. The file stays Apache-2.0 (LICENSES/Apache-2.0.txt).
+
+- kernel/config-6.16.0-geffa8626771a.stock is the kernel configuration of
+  Arduino's UNO Q image 20250807-136, kept for reference (GPL-2.0-only, as
+  part of the Linux kernel build).
+
+Prebuilt files in dist/
+=======================
+
+dist/kernel/linux-image-6.16.0-rt-qstep1_1_arm64.deb
+dist/kernel/linux-headers-6.16.0-rt-qstep1_1_arm64.deb
+    Linux kernel, GPL-2.0-only. Corresponding source:
+    https://github.com/arduino/linux-qcom at commit
+    effa8626771ad31536aafd3a5aa94cad7e528e23, plus kernel/rt.config and
+    kernel/patches/ from this repository. Built with kernel/build-rt-kernel.sh
+    from the base configuration in kernel/config-6.16.0-geffa8626771a.stock.
+
+dist/hal/unoq_spi.so
+    QStep HAL driver for LinuxCNC (GPL-2.0-or-later), built from hal/unoq_spi.c
+    against the LinuxCNC 2.9.4 headers (linuxcnc-uspace-dev, Debian 13).
+    LinuxCNC is free software under the GPL; see https://linuxcnc.org.
+
+dist/firmware/qstep-fw.elf, dist/firmware/qstep-fw.bin
+    STM32U585 firmware built from firmware/qstep-fw and firmware/common (this
+    repository) and linked with:
+      - the Zephyr RTOS, Arduino fork https://github.com/arduino/zephyr, tag
+        zephyr-arduino-v4.4.1+ (Apache-2.0)
+      - CMSIS (Apache-2.0)
+      - the STM32Cube HAL/LL drivers from zephyrproject-rtos/hal_stm32
+        (BSD-3-Clause, LICENSES/BSD-3-Clause.txt)
+    Apache-2.0 is compatible with GPL version 3 but not with version 2.
+    QStep's firmware sources are GPL-2.0-or-later, so the combined firmware
+    image is distributed under the GNU GPL version 3 or later
+    (LICENSES/GPL-3.0-or-later.txt). The Apache-2.0 and BSD-3-Clause
+    notices above apply to the corresponding parts.
+
+Not included
+============
+
+QStep doesn't redistribute Arduino's UNO Q system image, its Qualcomm boot
+firmware, or Arduino's STM32 firmware. Users flash Arduino's official image
+with Arduino's own tools (see dist/README.md).
+
+Trademarks
+==========
+
+Arduino and UNO are trademarks of Arduino s.r.l. Qualcomm and Dragonwing are
+trademarks of Qualcomm Incorporated. STM32 is a trademark of
+STMicroelectronics. LinuxCNC is a registered trademark of the LinuxCNC
+project. QStep is not affiliated with or endorsed by any of them.

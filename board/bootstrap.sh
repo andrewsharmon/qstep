@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # QStep step 2: install onto a UNO Q that runs Arduino's official image.
 #
 # Step 1 (on your computer, Arduino's own tool, no build tools needed):
@@ -28,7 +30,7 @@ while [ $# -gt 0 ]; do
 	--release-url) RELEASE_URL=$2; shift ;;
 	--version) QSTEP_VERSION=$2; shift ;;
 	--force) FORCE=1 ;;
-	-h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+	-h|--help) sed -n '4,15p' "$0"; exit 0 ;;
 	*) STEPS="$STEPS $1" ;;
 	esac
 	shift

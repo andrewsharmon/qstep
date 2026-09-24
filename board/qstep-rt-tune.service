@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 [Unit]
 Description=QStep boot setup (MCU BOOT0 low, SPI IRQ on isolated CPU, no runtime PM)
 After=systemd-modules-load.service

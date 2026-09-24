@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Build a flashable QStep image for the Arduino UNO Q.
 #
 # FOR LOCAL / PRIVATE USE ONLY. The result contains Arduino's complete software

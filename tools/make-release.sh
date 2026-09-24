@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Package an QStep release for manual upload (e.g. to a GitHub release):
 #
 #   tools/make-release.sh <version> [release-url]
@@ -28,7 +30,7 @@ STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$STAGE/dist"
 cp -R dist/kernel dist/hal dist/firmware dist/SHA256SUMS dist/README.md "$STAGE/dist/"
-cp -R board configs README.md "$STAGE/"
+cp -R board configs README.md NOTICE COPYING LICENSES "$STAGE/"
 {
 	echo "QStep $VER"
 	echo "source: $(git rev-parse HEAD)"

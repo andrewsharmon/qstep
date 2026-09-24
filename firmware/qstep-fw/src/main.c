@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 andrewsharmon
+ */
+/*
  * QStep firmware for the UNO Q STM32U585.
  *
  * SPI3 (DMA slave) exchanges one qstep_cmd/qstep_stat pair per LinuxCNC servo

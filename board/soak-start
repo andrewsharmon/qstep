@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Launch the unattended soak as transient systemd units (survive adb disconnects).
 #   soak-start [hours] [block-min]
 # Logs: /home/arduino/qstep-config/soak/ (CSV + log), MCU console in soak/mcu-*.log

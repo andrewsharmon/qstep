@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 [Unit]
 Description=QStep first boot: install config, back up and flash the STM32 firmware
 ConditionPathExists=!/var/lib/qstep/firstboot-done

@@ -31,3 +31,15 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
 
 Building from source needs the Lima VM (Debian 13 arm64), the Zephyr SDK and the
 `vendor/` clones, which aren't committed. See the bring-up log for the exact steps.
+
+## License
+
+Copyright (C) 2026 andrewsharmon.
+
+QStep is free software, licensed under the **GNU General Public License,
+version 2 or later** ([COPYING](COPYING)). The kernel patches are GPL-2.0-only,
+and one Arduino-derived firmware file is Apache-2.0. The prebuilt firmware image
+is distributed under GPL-3.0-or-later, because it links with Apache-2.0 Zephyr
+code. Every file carries an SPDX identifier. [NOTICE](NOTICE) lists third-party
+components and the source for every binary in `dist/`. License texts are in
+[LICENSES/](LICENSES/).

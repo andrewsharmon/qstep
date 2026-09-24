@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 andrewsharmon
+ */
+/*
  * QStep SPI link test (QRB2210 / Linux side).
  *
  * Runs a SCHED_FIFO loop at a fixed rate (default 1 kHz, like a LinuxCNC servo

@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 andrewsharmon
+ */
+/*
  * QStep link protocol: LinuxCNC (QRB2210, spidev master) <-> STM32U585 (SPI3 slave).
  *
  * One fixed-size full-duplex transfer per LinuxCNC servo period. Every transfer

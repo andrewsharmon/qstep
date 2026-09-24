@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 """Bench validation for joint 1 (Y), motor free on the bench.
 
 1. Jog test: continuous jogs at several speeds, stop, check the motor then

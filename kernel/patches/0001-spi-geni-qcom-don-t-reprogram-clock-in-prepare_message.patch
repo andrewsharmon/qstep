@@ -1,4 +1,6 @@
-From: QStep <noreply@example.invalid>
+From: QStep <noreply@qstep.invalid>
+X-SPDX-License-Identifier: GPL-2.0-only
+X-Copyright: Copyright (C) 2026 andrewsharmon
 Subject: [PATCH] spi: geni-qcom: don't reprogram the clock in prepare_message
 
 setup_fifo_params() (called from prepare_message for every message) sets the

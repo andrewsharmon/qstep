@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Build a PREEMPT_RT kernel .deb for the Arduino UNO Q.
 # Runs inside the Debian 13 arm64 Lima VM (limactl shell qstep).
 # Source: arduino/linux-qcom at the exact commit the board ships (6.16.0-geffa8626771a),

@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Boot-time setup and real-time tuning for QStep on the UNO Q (RT kernel, isolcpus=3).
 # - The MCU link's SPI controller (GENI SE @4a94000) interrupt and its IRQ thread
 #   run on the isolated CPU3 next to the LinuxCNC servo thread.

@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 andrewsharmon
+ */
+/*
  * unoq_spi: LinuxCNC HAL driver for the QStep firmware on the Arduino UNO Q.
  *
  * One full-duplex spidev transfer per servo period to the on-board STM32U585

@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # First boot of a flashed QStep image (qstep-firstboot.service):
 #  1. copy the LinuxCNC config from /opt/qstep/config into ~arduino (if absent),
 #  2. back up the STM32 flash once (the stock Arduino loader on a fresh board),

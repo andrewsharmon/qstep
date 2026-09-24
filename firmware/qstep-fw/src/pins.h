@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 andrewsharmon
+ */
+/*
  * Pin map: Arduino CNC Shield v3 (GRBL 1.1 layout) on the UNO Q header.
  * Everything that needs to change to move signals (e.g. to JMISC) is here.
  */

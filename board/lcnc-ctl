@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Control the QStep LinuxCNC instance on the UNO Q (run from an adb root shell).
 #   lcnc-ctl start            start the AXIS service (auto-restarts when AXIS is closed)
 #   lcnc-ctl stop             stop LinuxCNC (service or a manual headless instance)
@@ -60,7 +62,7 @@ run)
 	cd "$CFG" && exec $AS_ARDUINO "$@"
 	;;
 *)
-	sed -n '2,8p' "$0"
+	sed -n '4,9p' "$0"
 	exit 2
 	;;
 esac

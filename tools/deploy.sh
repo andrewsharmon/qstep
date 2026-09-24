@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Deploy QStep from this Mac to an attached UNO Q over adb, using only the
 # prebuilt files in dist/ (no kernel, firmware or HAL build needed).
 #

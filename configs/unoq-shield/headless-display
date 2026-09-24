@@ -1,3 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Stand-in "display" for headless bring-up: LinuxCNC runs until this exits.
 exec sleep infinity

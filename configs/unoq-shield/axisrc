@@ -1,2 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # ~/.axisrc for the QStep VNC display (no window manager): fill the 1280x800 screen.
 root_window.tk.call("wm", "geometry", ".", "1280x800+0+0")

@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * Copyright (C) 2026 andrewsharmon
+ */
+/*
  * QStep SPI link test firmware (STM32U585 side).
  *
  * Linux (spidev0.0, master) clocks fixed-size frames into SPI3 (slave, DMA).

@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Build a Zephyr app for the UNO Q STM32 in the Lima VM and flash it over the
 # board's on-board SWD (OpenOCD + linuxgpiod on the Linux side), via adb.
 # usage: tools/mcu-build-flash.sh firmware/<app>

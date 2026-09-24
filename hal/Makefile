@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 # Build the unoq_spi HAL module against an installed linuxcnc-uspace-dev.
 #   make            -> unoq_spi.so
 #   make install    -> copies it into LinuxCNC's module directory

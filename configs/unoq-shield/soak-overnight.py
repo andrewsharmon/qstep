@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
 """Long unattended soak of the QStep Y joint (motor free on the bench).
 
 Runs in blocks (default 10 min). Each block:
