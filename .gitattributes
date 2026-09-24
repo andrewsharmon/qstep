@@ -3,4 +3,3 @@ dist/**/*.deb filter=lfs diff=lfs merge=lfs -text
 dist/**/*.so  filter=lfs diff=lfs merge=lfs -text
 dist/**/*.elf filter=lfs diff=lfs merge=lfs -text
 dist/**/*.bin filter=lfs diff=lfs merge=lfs -text
-firmware/backup/*.bin filter=lfs diff=lfs merge=lfs -text

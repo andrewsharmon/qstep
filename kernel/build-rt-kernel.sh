@@ -5,7 +5,7 @@
 # config: the board's own /boot/config, plus kernel/rt.config on top.
 set -euo pipefail
 
-PROJ=/Users/andrewharmon/git/arducnc
+PROJ=$(cd "$(dirname "$0")/.." && pwd)
 COMMIT=${COMMIT:-effa8626771ad31536aafd3a5aa94cad7e528e23}
 BASECFG=${BASECFG:-$PROJ/kernel/config-6.16.0-geffa8626771a.stock}
 WORK=$HOME/kbuild

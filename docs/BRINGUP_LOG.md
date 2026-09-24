@@ -49,7 +49,7 @@ LinuxCNC HAL servo thread at 1 kHz (`timedelta`, 30 s, idle, RT forced): max jit
 ## 2026-09-24: MCU link (SPI) bring-up
 
 ### Backup
-- Full 2 MB STM32 flash dump taken over on-board SWD **before** any flashing: `firmware/backup/stock-mcu-flash-2MB.bin`, sha256 `c550fc1a…62d0`. RDP 0, TrustZone off, dual bank.
+- Full 2 MB STM32 flash dump taken over on-board SWD **before** any flashing: `stock-mcu-flash-2MB.bin`, sha256 `c550fc1a…62d0`. It holds Arduino firmware, so it's kept outside this repo in the local-only `../arducnc-private/mcu-backup/`. RDP 0, TrustZone off, dual bank.
 - Stock layout: Arduino Zephyr loader at 0x08000000 (no MCUboot), sketch LLEXT at 0x080F0000, boot animation at 0x080D0000.
 - Restore: `openocd -s /opt/openocd -f openocd_gpiod.cfg -c "init; reset halt; flash write_image erase stock-mcu-flash-2MB.bin 0x08000000 bin; reset run; shutdown"`.
 

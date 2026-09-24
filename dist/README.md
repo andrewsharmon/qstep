@@ -42,4 +42,3 @@ to start the RT kernel, and set a VNC password on the board:
 
 Individual steps: `--packages --kernel --system --hal --config --firmware` (see `board/install.sh`).
 The first `--firmware` run saves the MCU's original flash to `/root/arducnc/mcu-flash-backup.bin`.
-The stock image of the board this was developed on is also kept in `firmware/backup/`.
