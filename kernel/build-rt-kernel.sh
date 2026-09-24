@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build a PREEMPT_RT kernel .deb for the Arduino UNO Q.
-# Runs inside the Debian 13 arm64 Lima VM (limactl shell arducnc).
+# Runs inside the Debian 13 arm64 Lima VM (limactl shell qstep).
 # Source: arduino/linux-qcom at the exact commit the board ships (6.16.0-geffa8626771a),
 # config: the board's own /boot/config, plus kernel/rt.config on top.
 set -euo pipefail
@@ -33,7 +33,7 @@ cp "$BASECFG" .config
 scripts/kconfig/merge_config.sh -m .config "$PROJ/kernel/rt.config" >/dev/null
 make olddefconfig >/dev/null
 # Keep the running kernel's module/DTB naming scheme but mark it as RT.
-./scripts/config --set-str LOCALVERSION "-rt-arducnc${KVER_SUFFIX:-}" --disable LOCALVERSION_AUTO
+./scripts/config --set-str LOCALVERSION "-rt-qstep${KVER_SUFFIX:-}" --disable LOCALVERSION_AUTO
 ./scripts/config --disable DEBUG_INFO_BTF --disable DEBUG_INFO \
     --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT --enable DEBUG_INFO_NONE
 make olddefconfig >/dev/null
@@ -42,10 +42,10 @@ echo "== RT-relevant config =="
 grep -E '^CONFIG_(PREEMPT_RT|PREEMPT|HZ|NO_HZ_FULL|RCU_NOCB_CPU|CPU_FREQ_DEFAULT_GOV_PERFORMANCE)=' .config
 
 # Neutral build identity (no local user/host names in uname -v or the .deb).
-export KBUILD_BUILD_USER=arducnc KBUILD_BUILD_HOST=arducnc KBUILD_BUILD_VERSION=1
+export KBUILD_BUILD_USER=qstep KBUILD_BUILD_HOST=qstep KBUILD_BUILD_VERSION=1
 export KBUILD_BUILD_TIMESTAMP="${KBUILD_BUILD_TIMESTAMP:-$(git -C "$PROJ" log -1 --format=%cd --date=rfc 2>/dev/null || date -R)}"
-export DEBEMAIL="noreply@arducnc.invalid" DEBFULLNAME="ArduCNC"
+export DEBEMAIL="noreply@qstep.invalid" DEBFULLNAME="QStep"
 time make -j"$(nproc)" LOCALVERSION= KDEB_PKGVERSION="${KDEB_PKGVERSION:-1}" bindeb-pkg
-cp -v ../linux-image-*-rt-arducnc*.deb ../linux-headers-*-rt-arducnc*.deb "$OUT"/ 2>/dev/null || true
-cp .config "$OUT/config-rt-arducnc"
+cp -v ../linux-image-*-rt-qstep*.deb ../linux-headers-*-rt-qstep*.deb "$OUT"/ 2>/dev/null || true
+cp .config "$OUT/config-rt-qstep"
 ls -la "$OUT"

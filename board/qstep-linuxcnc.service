@@ -1,13 +1,13 @@
 [Unit]
-Description=ArduCNC LinuxCNC (AXIS on the VNC display :1); restarts when AXIS is closed
-Requires=arducnc-xvfb.service
-After=arducnc-xvfb.service arducnc-rt-tune.service
+Description=QStep LinuxCNC (AXIS on the VNC display :1); restarts when AXIS is closed
+Requires=qstep-xvfb.service
+After=qstep-xvfb.service qstep-rt-tune.service
 
 [Service]
 User=arduino
-WorkingDirectory=/home/arduino/arducnc-config
+WorkingDirectory=/home/arduino/qstep-config
 Environment=HOME=/home/arduino DISPLAY=:1 LINUXCNC_FORCE_REALTIME=1
-ExecStart=/usr/bin/linuxcnc /home/arduino/arducnc-config/unoq-shield.ini
+ExecStart=/usr/bin/linuxcnc /home/arduino/qstep-config/unoq-shield.ini
 # Closing AXIS ends LinuxCNC; bring it straight back.
 Restart=always
 RestartSec=3

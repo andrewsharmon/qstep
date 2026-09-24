@@ -1,4 +1,4 @@
-From: ArduCNC <noreply@example.invalid>
+From: QStep <noreply@example.invalid>
 Subject: [PATCH] spi: geni-qcom: don't reprogram the clock in prepare_message
 
 setup_fifo_params() (called from prepare_message for every message) sets the

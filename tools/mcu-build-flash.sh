@@ -9,10 +9,10 @@ NAME=$(basename "$APP")
 ADB=$ROOT/tools/platform-tools/adb
 export PATH=$ROOT/tools/bin:$PATH
 
-limactl shell arducnc -- bash -lc ". ~/zvenv/bin/activate && cd ~/zp && \
+limactl shell qstep -- bash -lc ". ~/zvenv/bin/activate && cd ~/zp && \
     west build -b arduino_uno_q '$APP' -d ~/build-$NAME 2>&1 | grep -E 'error|warning:|FLASH:|RAM:' ; \
     cp ~/build-$NAME/zephyr/zephyr.elf '$APP/$NAME.elf'"
-$ADB push "$APP/$NAME.elf" /root/arducnc/ >/dev/null
+$ADB push "$APP/$NAME.elf" /root/qstep/ >/dev/null
 $ADB shell "cd /opt/openocd && ./bin/openocd -s /opt/openocd -f openocd_gpiod.cfg \
-    -c 'program /root/arducnc/$NAME.elf verify reset exit' 2>&1 | grep 'Verified OK'" \
+    -c 'program /root/qstep/$NAME.elf verify reset exit' 2>&1 | grep 'Verified OK'" \
     || { echo "flash failed"; exit 1; }

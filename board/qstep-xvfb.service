@@ -1,5 +1,5 @@
 [Unit]
-Description=ArduCNC virtual display :1 (for AXIS over VNC)
+Description=QStep virtual display :1 (for AXIS over VNC)
 
 [Service]
 User=arduino

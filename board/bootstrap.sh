@@ -1,20 +1,20 @@
 #!/bin/sh
-# ArduCNC step 2: install onto a UNO Q that runs Arduino's official image.
+# QStep step 2: install onto a UNO Q that runs Arduino's official image.
 #
 # Step 1 (on your computer, Arduino's own tool, no build tools needed):
 #     arduino-flasher-cli flash unoq --version 20250807-136
 # Step 2 (on the board, as root: `adb shell`, or `sudo` in a board terminal/SSH;
 #         the board needs internet, e.g. Wi-Fi set up in Arduino's first-boot setup):
-#     sh arducnc-bootstrap.sh                       # download the release bundle and install
-#     sh arducnc-bootstrap.sh --bundle FILE.tar.gz  # install from a bundle already on the board
+#     sh qstep-bootstrap.sh                       # download the release bundle and install
+#     sh qstep-bootstrap.sh --bundle FILE.tar.gz  # install from a bundle already on the board
 #
-# Options: --release-url URL (where arducnc-<version>.tar.gz and .sha256 live),
+# Options: --release-url URL (where qstep-<version>.tar.gz and .sha256 live),
 #          --version V, --force (skip the base image check), and any board/install.sh
 #          step flags (default --all). Then power-cycle the board (unplug/replug).
 set -eu
 
-ARDUCNC_VERSION=${ARDUCNC_VERSION:-@VERSION@}
-RELEASE_URL=${ARDUCNC_RELEASE_URL:-@RELEASE_URL@}
+QSTEP_VERSION=${QSTEP_VERSION:-@VERSION@}
+RELEASE_URL=${QSTEP_RELEASE_URL:-@RELEASE_URL@}
 # The RT kernel is built from the kernel of this Arduino image release.
 BASE_KERNEL_PKG=linux-image-6.16.0-geffa8626771a
 BASE_IMAGE=20250807-136
@@ -26,7 +26,7 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 	--bundle) BUNDLE=$2; shift ;;
 	--release-url) RELEASE_URL=$2; shift ;;
-	--version) ARDUCNC_VERSION=$2; shift ;;
+	--version) QSTEP_VERSION=$2; shift ;;
 	--force) FORCE=1 ;;
 	-h|--help) sed -n '2,17p' "$0"; exit 0 ;;
 	*) STEPS="$STEPS $1" ;;
@@ -52,7 +52,7 @@ if ! dpkg-query -W -f='${Status}' "$BASE_KERNEL_PKG" 2>/dev/null | grep -q " ok 
 fi
 
 # ---- get the bundle -------------------------------------------------------------
-WORK=/opt/arducnc
+WORK=/opt/qstep
 mkdir -p $WORK
 if [ -z "$BUNDLE" ]; then
 	case "$RELEASE_URL" in @*) echo "No release URL built in; use --release-url or --bundle"; exit 1 ;; esac
@@ -62,10 +62,10 @@ if [ -z "$BUNDLE" ]; then
 		timedatectl set-ntp true 2>/dev/null || true
 		sleep 5
 	fi
-	BUNDLE=$WORK/arducnc-$ARDUCNC_VERSION.tar.gz
-	echo "Downloading ArduCNC $ARDUCNC_VERSION from $RELEASE_URL"
-	curl -fSL -o "$BUNDLE" "$RELEASE_URL/arducnc-$ARDUCNC_VERSION.tar.gz"
-	curl -fsSL -o "$BUNDLE.sha256" "$RELEASE_URL/arducnc-$ARDUCNC_VERSION.tar.gz.sha256"
+	BUNDLE=$WORK/qstep-$QSTEP_VERSION.tar.gz
+	echo "Downloading QStep $QSTEP_VERSION from $RELEASE_URL"
+	curl -fSL -o "$BUNDLE" "$RELEASE_URL/qstep-$QSTEP_VERSION.tar.gz"
+	curl -fsSL -o "$BUNDLE.sha256" "$RELEASE_URL/qstep-$QSTEP_VERSION.tar.gz.sha256"
 fi
 if [ -f "$BUNDLE.sha256" ]; then
 	(cd "$(dirname "$BUNDLE")" && sha256sum -c "$(basename "$BUNDLE").sha256")
@@ -86,13 +86,13 @@ sh $SRC/board/install.sh $STEPS
 
 cat <<EOF
 
-ArduCNC is installed. Next:
+QStep is installed. Next:
   1. Power-cycle the board (unplug and replug USB-C) to boot the real-time kernel.
      (A warm "reboot" is not enough on the UNO Q.)
   2. To use AXIS over VNC, set a password once:
-       x11vnc -storepasswd /etc/arducnc/vnc.pass && systemctl restart arducnc-vnc
+       x11vnc -storepasswd /etc/qstep/vnc.pass && systemctl restart qstep-vnc
      then on your computer: adb forward tcp:5900 tcp:5900 ; open vnc://127.0.0.1:5900
-  3. Machine config: /home/arduino/arducnc-config/unoq-shield.ini (units: motor revolutions;
+  3. Machine config: /home/arduino/qstep-config/unoq-shield.ini (units: motor revolutions;
      set SCALE = 6400 / mm-per-rev for your mechanics).
-The STM32's original firmware was saved to /root/arducnc/mcu-flash-backup.bin.
+The STM32's original firmware was saved to /root/qstep/mcu-flash-backup.bin.
 EOF

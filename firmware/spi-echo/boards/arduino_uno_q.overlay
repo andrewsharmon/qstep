@@ -1,5 +1,5 @@
 /*
- * ArduCNC SPI link test for the UNO Q STM32U585.
+ * QStep SPI link test for the UNO Q STM32U585.
  * SPI3 (internal link to the QRB2210 spi5 / spidev0.0) runs as a DMA slave.
  * GPDMA1 request lines on the U5: SPI3_RX = 10, SPI3_TX = 11.
  */

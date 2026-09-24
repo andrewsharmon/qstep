@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Long unattended soak of the ArduCNC Y joint (motor free on the bench).
+"""Long unattended soak of the QStep Y joint (motor free on the bench).
 
 Runs in blocks (default 10 min). Each block:
   * random RELATIVE-range moves (G0, G1 at mixed feeds, short jogs) within
@@ -32,7 +32,7 @@ STRESS_S = 60
 ap = argparse.ArgumentParser()
 ap.add_argument("--hours", type=float, default=10.0)
 ap.add_argument("--block-min", type=float, default=10.0)
-ap.add_argument("--out", default="/home/arduino/arducnc-config/soak")
+ap.add_argument("--out", default="/home/arduino/qstep-config/soak")
 args = ap.parse_args()
 
 s, c = linuxcnc.stat(), linuxcnc.command()

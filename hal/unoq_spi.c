@@ -1,8 +1,8 @@
 /*
- * unoq_spi: LinuxCNC HAL driver for the ArduCNC firmware on the Arduino UNO Q.
+ * unoq_spi: LinuxCNC HAL driver for the QStep firmware on the Arduino UNO Q.
  *
  * One full-duplex spidev transfer per servo period to the on-board STM32U585
- * (see firmware/common/arducnc_proto.h). The MCU runs velocity-mode DDS step
+ * (see firmware/common/qstep_proto.h). The MCU runs velocity-mode DDS step
  * generation; this driver closes the position loop.
  *
  * The transfer itself runs in a private SCHED_FIFO worker thread on the same
@@ -70,10 +70,10 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include "arducnc_proto.h"
+#include "qstep_proto.h"
 
-MODULE_AUTHOR("ArduCNC");
-MODULE_DESCRIPTION("ArduCNC UNO Q STM32 stepgen/IO over SPI");
+MODULE_AUTHOR("QStep");
+MODULE_DESCRIPTION("QStep UNO Q STM32 stepgen/IO over SPI");
 MODULE_LICENSE("GPL");
 
 static char *spi_dev = "/dev/spidev0.0";
@@ -89,8 +89,8 @@ static const char *input_names[NUM_INPUTS] = {"limit-x", "limit-y", "limit-z", "
 					       "hold", "resume", "probe"};
 static const char *output_names[NUM_OUTPUTS] = {"spindle-enable", "spindle-dir", "coolant"};
 
-#define STEP_RATE_MAX   (ACNC_BASE_FREQ_HZ / 2.0)
-#define DDS_PER_HZ      (4294967296.0 / ACNC_BASE_FREQ_HZ)
+#define STEP_RATE_MAX   (QSTEP_BASE_FREQ_HZ / 2.0)
+#define DDS_PER_HZ      (4294967296.0 / QSTEP_BASE_FREQ_HZ)
 #define MAX_FB_AGE      16 /* status older than this many commands = not connected */
 
 typedef struct {
@@ -108,7 +108,7 @@ typedef struct {
 } joint_t;
 
 typedef struct {
-	joint_t joint[ACNC_JOINTS];
+	joint_t joint[QSTEP_JOINTS];
 	hal_bit_t *enable;
 	hal_bit_t *connected;
 	hal_bit_t *watchdog;
@@ -122,13 +122,13 @@ typedef struct {
 } unoq_hal_t;
 
 typedef union {
-	struct acnc_cmd cmd;
-	uint8_t raw[ACNC_FRAME_LEN];
+	struct qstep_cmd cmd;
+	uint8_t raw[QSTEP_FRAME_LEN];
 } tx_frame_t;
 
 typedef union {
-	struct acnc_stat stat;
-	uint8_t raw[ACNC_FRAME_LEN];
+	struct qstep_stat stat;
+	uint8_t raw[QSTEP_FRAME_LEN];
 } rx_frame_t;
 
 /* SPI worker: the servo thread fills `tx`, bumps `posted` and posts `go`; the
@@ -151,13 +151,13 @@ static struct {
 	int lat_fd;
 	uint8_t seq;
 	int have_fb;
-	int32_t count_offset[ACNC_JOINTS];
-	int32_t counts[ACNC_JOINTS];      /* latest reported, relative to count_offset */
+	int32_t count_offset[QSTEP_JOINTS];
+	int32_t counts[QSTEP_JOINTS];      /* latest reported, relative to count_offset */
 	uint8_t counts_seq;               /* command the counts were sampled after */
-	double v_ring[ACNC_JOINTS][256];  /* steps/s commanded with each seq */
+	double v_ring[QSTEP_JOINTS][256];  /* steps/s commanded with each seq */
 	uint8_t dur_ring[256];            /* periods each seq stayed in effect */
-	double old_cmd[ACNC_JOINTS];
-	int was_enabled[ACNC_JOINTS];
+	double old_cmd[QSTEP_JOINTS];
+	int was_enabled[QSTEP_JOINTS];
 } st;
 
 static int comp_id;
@@ -174,7 +174,7 @@ static void *spi_worker(void *arg)
 		struct spi_ioc_transfer xfer = {
 			.tx_buf = (uintptr_t)w.tx.raw,
 			.rx_buf = (uintptr_t)w.rx.raw,
-			.len = ACNC_FRAME_LEN,
+			.len = QSTEP_FRAME_LEN,
 			.speed_hz = spi_speed,
 			.bits_per_word = 8,
 		};
@@ -198,13 +198,13 @@ static int collect_reply(void)
 		return -EAGAIN; /* nothing sent yet */
 	}
 	memcpy(&rx, &w.rx, sizeof(rx));
-	if (!w.xfer_ok || rx.stat.magic != ACNC_STAT_MAGIC ||
-	    rx.stat.crc != acnc_crc16(rx.raw, ACNC_FRAME_LEN - 2)) {
+	if (!w.xfer_ok || rx.stat.magic != QSTEP_STAT_MAGIC ||
+	    rx.stat.crc != qstep_crc16(rx.raw, QSTEP_FRAME_LEN - 2)) {
 		(*h->link_errors)++;
 		return -EIO;
 	}
 
-	int32_t steps[ACNC_JOINTS];
+	int32_t steps[QSTEP_JOINTS];
 
 	memcpy(steps, rx.stat.steps, sizeof(steps));
 	if (!st.have_fb) {
@@ -212,13 +212,13 @@ static int collect_reply(void)
 		memcpy(st.count_offset, steps, sizeof(steps));
 		st.have_fb = 1;
 	}
-	for (int j = 0; j < ACNC_JOINTS; j++) {
+	for (int j = 0; j < QSTEP_JOINTS; j++) {
 		st.counts[j] = steps[j] - st.count_offset[j];
 		*h->joint[j].counts = st.counts[j];
 	}
 	st.counts_seq = rx.stat.seq_echo;
-	*h->enabled = !!(rx.stat.status & ACNC_ST_ENABLED);
-	*h->watchdog = !!(rx.stat.status & ACNC_ST_WATCHDOG);
+	*h->enabled = !!(rx.stat.status & QSTEP_ST_ENABLED);
+	*h->watchdog = !!(rx.stat.status & QSTEP_ST_WATCHDOG);
 	*h->mcu_bad_frames = rx.stat.frames_bad;
 	*h->isr_max_us = rx.stat.isr_max_cycles / 160.0; /* 160 MHz core */
 	for (int i = 0; i < NUM_INPUTS; i++) {
@@ -251,11 +251,11 @@ static void update(void *arg, long period)
 	tx_frame_t tx;
 
 	memset(&tx, 0, sizeof(tx));
-	tx.cmd.magic = ACNC_CMD_MAGIC;
-	tx.cmd.flags = drivers_on ? ACNC_CMD_ENABLE : 0;
+	tx.cmd.magic = QSTEP_CMD_MAGIC;
+	tx.cmd.flags = drivers_on ? QSTEP_CMD_ENABLE : 0;
 	uint8_t new_seq = st.seq + 1;
 
-	for (int j = 0; j < ACNC_JOINTS; j++) {
+	for (int j = 0; j < QSTEP_JOINTS; j++) {
 		joint_t *jt = &h->joint[j];
 		double scale = jt->scale != 0.0 ? jt->scale : 1.0;
 		double cmd = *jt->position_cmd;
@@ -330,7 +330,7 @@ static void update(void *arg, long period)
 		}
 	}
 	tx.cmd.outputs = outputs;
-	tx.cmd.crc = acnc_crc16(tx.raw, ACNC_FRAME_LEN - 2);
+	tx.cmd.crc = qstep_crc16(tx.raw, QSTEP_FRAME_LEN - 2);
 
 	/* Hand the frame to the worker (it is idle: done == posted). */
 	memcpy(&w.tx, &tx, sizeof(tx));
@@ -342,7 +342,7 @@ static int export_pins(void)
 {
 	int r = 0;
 
-	for (int j = 0; j < ACNC_JOINTS; j++) {
+	for (int j = 0; j < QSTEP_JOINTS; j++) {
 		joint_t *jt = &h->joint[j];
 
 		r |= hal_pin_float_newf(HAL_IN, &jt->position_cmd, comp_id, "unoq.%d.position-cmd", j);
@@ -471,15 +471,15 @@ void rtapi_app_exit(void)
 		struct spi_ioc_transfer xfer = {
 			.tx_buf = (uintptr_t)tx.raw,
 			.rx_buf = (uintptr_t)rx.raw,
-			.len = ACNC_FRAME_LEN,
+			.len = QSTEP_FRAME_LEN,
 			.speed_hz = spi_speed,
 			.bits_per_word = 8,
 		};
 
 		memset(&tx, 0, sizeof(tx));
-		tx.cmd.magic = ACNC_CMD_MAGIC;
+		tx.cmd.magic = QSTEP_CMD_MAGIC;
 		tx.cmd.seq = ++st.seq;
-		tx.cmd.crc = acnc_crc16(tx.raw, ACNC_FRAME_LEN - 2);
+		tx.cmd.crc = qstep_crc16(tx.raw, QSTEP_FRAME_LEN - 2);
 		ioctl(st.fd, SPI_IOC_MESSAGE(1), &xfer);
 		close(st.fd);
 	}

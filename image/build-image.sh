@@ -1,8 +1,8 @@
 #!/bin/bash
-# Build a flashable ArduCNC image for the Arduino UNO Q.
+# Build a flashable QStep image for the Arduino UNO Q.
 #
 # FOR LOCAL / PRIVATE USE ONLY. The result contains Arduino's complete software
-# image and Qualcomm boot firmware, which ArduCNC doesn't redistribute. The public
+# image and Qualcomm boot firmware, which QStep doesn't redistribute. The public
 # install path is the two-step install in dist/README.md (Arduino's own image, then
 # board/bootstrap.sh).
 #
@@ -11,10 +11,10 @@
 # `IMAGE=1 board/install.sh` in an arm64 chroot, and repackages it in the same
 # layout, so it can be flashed with Arduino's own tool:
 #
-#     arduino-flasher-cli flash unoq ./arducnc-unoq-image-<version>.tar.zst
+#     arduino-flasher-cli flash unoq ./qstep-unoq-image-<version>.tar.zst
 #
 # Runs in the Debian 13 arm64 Lima VM (native chroot, needs sudo and internet):
-#     limactl shell arducnc -- /Users/.../arducnc/image/build-image.sh
+#     limactl shell qstep -- /Users/.../qstep/image/build-image.sh
 set -euo pipefail
 
 PROJ=$(cd "$(dirname "$0")/.." && pwd)
@@ -22,10 +22,10 @@ BASE_VER=${BASE_VER:-20250807-136}
 BASE_URL=https://downloads.arduino.cc/debian-im/Stable/$BASE_VER/arduino-unoq-debian-image-$BASE_VER.tar.zst
 BASE_SHA=${BASE_SHA:-9269521730db68752323a73b290041ffb33a1c4e24ec4dcee7c3d365bc8424fc}
 VERSION=${VERSION:-$(date +%Y%m%d)-$(git -C "$PROJ" rev-parse --short HEAD 2>/dev/null || echo local)}
-NAME=arducnc-unoq-image-$VERSION
+NAME=qstep-unoq-image-$VERSION
 WORK=${WORK:-$HOME/img}
 OUT=${OUT:-$PROJ/dist/image}
-R=/mnt/arducnc-root
+R=/mnt/qstep-root
 
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq zstd e2fsprogs zerofree >/dev/null
 
@@ -87,9 +87,9 @@ sudo cp /etc/resolv.conf $R/etc/resolv.conf
 printf '#!/bin/sh\nexit 101\n' | sudo tee $R/usr/sbin/policy-rc.d >/dev/null
 sudo chmod 755 $R/usr/sbin/policy-rc.d
 
-sudo mkdir -p $R/opt/arducnc/src
-sudo cp -r "$PROJ/dist" "$PROJ/board" "$PROJ/configs" $R/opt/arducnc/src/
-sudo rm -rf $R/opt/arducnc/src/dist/image
+sudo mkdir -p $R/opt/qstep/src
+sudo cp -r "$PROJ/dist" "$PROJ/board" "$PROJ/configs" $R/opt/qstep/src/
+sudo rm -rf $R/opt/qstep/src/dist/image
 
 # kernel-install cannot probe a loop-mounted ESP; tell it where it is.
 # (u-boot-efi-dtb still prints "EFI partition not found" because /proc/mounts
@@ -97,32 +97,32 @@ sudo rm -rf $R/opt/arducnc/src/dist/image
 # DTBs, which the checks below verify.)
 sudo chroot $R /usr/bin/env IMAGE=1 SYSTEMD_ESP_PATH=/boot/efi BOOT_ROOT=/boot/efi \
 	SYSTEMD_RELAX_ESP_CHECKS=1 DEBIAN_FRONTEND=noninteractive \
-	sh /opt/arducnc/src/board/install.sh --packages --kernel --system --hal --config --firmware
+	sh /opt/qstep/src/board/install.sh --packages --kernel --system --hal --config --firmware
 
 # Record what went in.
 {
-	echo "ArduCNC image $VERSION"
+	echo "QStep image $VERSION"
 	echo "base: Arduino UNO Q Debian image $BASE_VER ($BASE_SHA)"
 	echo "source: $(git -C "$PROJ" rev-parse HEAD 2>/dev/null || echo unknown)"
 	grep -E '^[0-9a-f]{64}' "$PROJ/dist/SHA256SUMS"
-} | sudo tee $R/opt/arducnc/VERSION >/dev/null
+} | sudo tee $R/opt/qstep/VERSION >/dev/null
 
 # ---- checks ------------------------------------------------------------------
 echo "== checks"
-entry=$(ls $R/boot/efi/loader/entries/ | grep rt-arducnc2)
+entry=$(ls $R/boot/efi/loader/entries/ | grep rt-qstep1)
 echo "boot entry: $entry"
 grep '^options' "$R/boot/efi/loader/entries/$entry"
 grep -q 'isolcpus=3' "$R/boot/efi/loader/entries/$entry"
 grep -q '^timeout 3' $R/boot/efi/loader/loader.conf
 test -f $R/usr/lib/linuxcnc/modules/unoq_spi.so
-test -f $R/opt/arducnc/firmware/arducnc-fw.elf
-test -d $R/opt/arducnc/config
-for u in arducnc-rt-tune arducnc-xvfb arducnc-vnc arducnc-linuxcnc arducnc-firstboot; do
+test -f $R/opt/qstep/firmware/qstep-fw.elf
+test -d $R/opt/qstep/config
+for u in qstep-rt-tune qstep-xvfb qstep-vnc qstep-linuxcnc qstep-firstboot; do
 	test -L $R/etc/systemd/system/multi-user.target.wants/$u.service || { echo "$u not enabled"; exit 1; }
 done
 ! test -e $R/etc/systemd/system/multi-user.target.wants/arduino-router.service
-sudo chroot $R dpkg-query -W linuxcnc-uspace xvfb x11vnc rt-tests "linux-image-6.16.0-rt-arducnc2"
-kdtb=$(ls $R/usr/lib/linux-image-6.16.0-rt-arducnc2/qcom/qrb2210-arduino-imola.dtb)
+sudo chroot $R dpkg-query -W linuxcnc-uspace xvfb x11vnc rt-tests "linux-image-6.16.0-rt-qstep1"
+kdtb=$(ls $R/usr/lib/linux-image-6.16.0-rt-qstep1/qcom/qrb2210-arduino-imola.dtb)
 cmp "$kdtb" $R/boot/efi/dtb/qcom/qrb2210-arduino-imola.dtb && echo "ESP DTB matches the RT kernel's DTB"
 
 # ---- tidy ----------------------------------------------------------------------
@@ -131,7 +131,7 @@ sudo rm -f $R/etc/resolv.conf
 if [ -e $WORK/resolv.conf.orig ] || [ -L $WORK/resolv.conf.orig ]; then
 	sudo cp -a $WORK/resolv.conf.orig $R/etc/resolv.conf
 fi
-sudo rm -rf $R/opt/arducnc/src/dist/kernel
+sudo rm -rf $R/opt/qstep/src/dist/kernel
 sudo chroot $R apt-get clean
 sudo rm -rf $R/var/lib/apt/lists/* $R/tmp/* $R/var/tmp/*
 cleanup

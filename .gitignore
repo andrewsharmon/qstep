@@ -20,7 +20,7 @@
 /dist/image/
 /image/build.log
 
-# Stock/vendor firmware dumps belong in ../arducnc-private, never here
+# Stock/vendor firmware dumps belong in ../qstep-private, never here
 /firmware/backup/
 /release/
 /tools/flasher/

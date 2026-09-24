@@ -1,5 +1,5 @@
 #!/bin/sh
-# Deploy ArduCNC from this Mac to an attached UNO Q over adb, using only the
+# Deploy QStep from this Mac to an attached UNO Q over adb, using only the
 # prebuilt files in dist/ (no kernel, firmware or HAL build needed).
 #
 #   tools/deploy.sh --dry-run --all     show what would be done
@@ -12,7 +12,7 @@
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 ADB=$ROOT/tools/platform-tools/adb
-STAGE=/root/arducnc-stage
+STAGE=/root/qstep-stage
 
 "$ADB" get-state >/dev/null || { echo "no board on adb"; exit 1; }
 "$ADB" shell "date -u -s '$(date -u '+%Y-%m-%d %H:%M:%S')' >/dev/null"

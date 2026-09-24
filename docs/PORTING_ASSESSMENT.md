@@ -1,4 +1,4 @@
-# ArduCNC: LinuxCNC on the Arduino UNO Q, porting assessment
+# QStep: LinuxCNC on the Arduino UNO Q, porting assessment
 
 Written 2026-09-23, from source only. No hardware has been tested yet. Items marked
 **MEASURE** need a real board to confirm.

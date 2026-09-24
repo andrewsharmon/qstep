@@ -1,7 +1,7 @@
 /*
- * DDS step generation for up to ACNC_JOINTS joints.
+ * DDS step generation for up to QSTEP_JOINTS joints.
  *
- * TIM6 interrupts at ACNC_BASE_FREQ_HZ (100 kHz). Each tick:
+ * TIM6 interrupts at QSTEP_BASE_FREQ_HZ (100 kHz). Each tick:
  *   1. lower the STEP pins raised on the previous tick (10 us pulses),
  *   2. per joint, add |incr| to a 32-bit accumulator; an overflow is one step.
  * |incr| is clamped to 2^31, so a joint steps at most every other tick
@@ -26,20 +26,20 @@
 #define DIR_HOLD_TICKS 2
 #define INCR_MAX       0x80000000u
 
-static const struct pin step_pins[ACNC_JOINTS] = STEP_PINS;
-static const struct pin dir_pins[ACNC_JOINTS] = DIR_PINS;
+static const struct pin step_pins[QSTEP_JOINTS] = STEP_PINS;
+static const struct pin dir_pins[QSTEP_JOINTS] = DIR_PINS;
 static const struct pin enable_pin = ENABLE_PIN;
 static const struct pin input_pins[] = INPUT_PINS;
 static const struct pin output_pins[] = OUTPUT_PINS;
 
-static volatile int32_t incr[ACNC_JOINTS];
-static volatile int32_t pos[ACNC_JOINTS];
+static volatile int32_t incr[QSTEP_JOINTS];
+static volatile int32_t pos[QSTEP_JOINTS];
 static volatile bool enabled;
 
-static uint32_t acc[ACNC_JOINTS];
-static int8_t cur_dir[ACNC_JOINTS] = {1, 1, 1, 1};
-static uint8_t hold[ACNC_JOINTS];
-static bool pending[ACNC_JOINTS];
+static uint32_t acc[QSTEP_JOINTS];
+static int8_t cur_dir[QSTEP_JOINTS] = {1, 1, 1, 1};
+static uint8_t hold[QSTEP_JOINTS];
+static bool pending[QSTEP_JOINTS];
 
 /* STEP pins raised on the last tick, per port, so the next tick can lower them. */
 static uint32_t raised_a, raised_b, raised_c;
@@ -72,7 +72,7 @@ ISR_DIRECT_DECLARE(stepgen_isr)
 	raised_a = raised_b = raised_c = 0;
 
 	if (enabled) {
-		for (int j = 0; j < ACNC_JOINTS; j++) {
+		for (int j = 0; j < QSTEP_JOINTS; j++) {
 			if (!step_pins[j].port) {
 				continue;
 			}
@@ -153,7 +153,7 @@ int stepgen_init(void)
 
 	/* Drivers disabled (EN high) before anything else. */
 	err |= pin_setup(&enable_pin, GPIO_OUTPUT_HIGH);
-	for (int j = 0; j < ACNC_JOINTS; j++) {
+	for (int j = 0; j < QSTEP_JOINTS; j++) {
 		err |= pin_setup(&step_pins[j], GPIO_OUTPUT_LOW);
 		err |= pin_setup(&dir_pins[j], GPIO_OUTPUT_HIGH);
 	}
@@ -176,7 +176,7 @@ int stepgen_init(void)
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
 	TIM6->CR1 = 0;
 	TIM6->PSC = 0;
-	TIM6->ARR = (SystemCoreClock / ACNC_BASE_FREQ_HZ) - 1;
+	TIM6->ARR = (SystemCoreClock / QSTEP_BASE_FREQ_HZ) - 1;
 	TIM6->EGR = TIM_EGR_UG;
 	TIM6->SR = 0;
 	TIM6->DIER = TIM_DIER_UIE;
@@ -187,9 +187,9 @@ int stepgen_init(void)
 	return 0;
 }
 
-void stepgen_set_incr(const int32_t in[ACNC_JOINTS])
+void stepgen_set_incr(const int32_t in[QSTEP_JOINTS])
 {
-	for (int j = 0; j < ACNC_JOINTS; j++) {
+	for (int j = 0; j < QSTEP_JOINTS; j++) {
 		incr[j] = enabled ? in[j] : 0;
 	}
 }
@@ -197,7 +197,7 @@ void stepgen_set_incr(const int32_t in[ACNC_JOINTS])
 void stepgen_enable(bool on)
 {
 	if (!on) {
-		for (int j = 0; j < ACNC_JOINTS; j++) {
+		for (int j = 0; j < QSTEP_JOINTS; j++) {
 			incr[j] = 0;
 		}
 	}
@@ -210,9 +210,9 @@ bool stepgen_enabled(void)
 	return enabled;
 }
 
-void stepgen_get_pos(int32_t out[ACNC_JOINTS])
+void stepgen_get_pos(int32_t out[QSTEP_JOINTS])
 {
-	for (int j = 0; j < ACNC_JOINTS; j++) {
+	for (int j = 0; j < QSTEP_JOINTS; j++) {
 		out[j] = pos[j];
 	}
 }

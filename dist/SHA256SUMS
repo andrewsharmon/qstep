@@ -1,5 +1,5 @@
-a92089ad820b3475f227407483e5fbfd880fba2024b6de8fad015630253fd79c  dist/kernel/linux-headers-6.16.0-rt-arducnc2_2_arm64.deb
-46e8bc7774abbe205f2be8a0344573b3a2576a637dec95f0795a0d64d0ffb35e  dist/kernel/linux-image-6.16.0-rt-arducnc2_2_arm64.deb
-0fa60ac38aeacbc752826e45ec6a68f94330ccd07a3fc5210a7a8cbee913581f  dist/hal/unoq_spi.so
-7aa14ca16c737743fd0ca7620ea27da09f906e90b77c83d10b2d8a0cf4d96e0d  dist/firmware/arducnc-fw.bin
-107ebc008afe528c4c1e3ca379f0dd1f2ea9636df4106e8e7484a7776afa1b7c  dist/firmware/arducnc-fw.elf
+e0d1df860ac749de738d7e856cc46a6d9efd8a0fbee43e57cb34629a86c3cf99  dist/kernel/linux-headers-6.16.0-rt-qstep1_1_arm64.deb
+c14f8ef1e93f0eea37d4a194bd06d628f2d7d9c0c3652a476672a1aaf62830f6  dist/kernel/linux-image-6.16.0-rt-qstep1_1_arm64.deb
+ab2d64f31135b2c010f80a1c32ab459d0ba913641d60d1f7a16bafc256a08e53  dist/hal/unoq_spi.so
+ab3a2b86fce2b930b2088a0a63045d1726b8936e5f8479b2cf476a1f6d694684  dist/firmware/qstep-fw.bin
+ed945420b80b0a906e8505b1794b994a99940198340c688331a22bd3d706e60c  dist/firmware/qstep-fw.elf

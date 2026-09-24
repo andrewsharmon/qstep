@@ -1,5 +1,5 @@
 /*
- * ArduCNC SPI link test (QRB2210 / Linux side).
+ * QStep SPI link test (QRB2210 / Linux side).
  *
  * Runs a SCHED_FIFO loop at a fixed rate (default 1 kHz, like a LinuxCNC servo
  * thread), does one full-duplex spidev transfer per period and checks that the

@@ -1,4 +1,4 @@
-# ArduCNC: LinuxCNC on the Arduino UNO Q
+# QStep: LinuxCNC on the Arduino UNO Q
 
 LinuxCNC 2.9 runs on the UNO Q's Qualcomm QRB2210 (Debian 13, PREEMPT_RT kernel).
 Step pulses come from the on-board STM32U585 over the internal SPI link.
@@ -14,13 +14,13 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
 - **Status and measurements:** [docs/BRINGUP_LOG.md](docs/BRINGUP_LOG.md)
 - **Original feasibility study:** [docs/PORTING_ASSESSMENT.md](docs/PORTING_ASSESSMENT.md)
 - **Install (no build tools needed):** flash Arduino's official image 20250807-136 with
-  `arduino-flasher-cli`, then run `arducnc-bootstrap.sh` on the board. See [dist/README.md](dist/README.md).
+  `arduino-flasher-cli`, then run `qstep-bootstrap.sh` on the board. See [dist/README.md](dist/README.md).
 
 | Path | Contents |
 |---|---|
 | `dist/` | Prebuilt kernel .deb, HAL module, STM32 firmware, checksums |
-| `firmware/common/arducnc_proto.h` | Link protocol shared by the firmware and the HAL driver |
-| `firmware/arducnc-fw/` | STM32 firmware (stepgen, SPI, IO, watchdog, LED matrix) |
+| `firmware/common/qstep_proto.h` | Link protocol shared by the firmware and the HAL driver |
+| `firmware/qstep-fw/` | STM32 firmware (stepgen, SPI, IO, watchdog, LED matrix) |
 | `firmware/spi-echo/` | SPI link test firmware (pairs with `tools/spitest/`) |
 | `hal/` | `unoq_spi` LinuxCNC HAL driver (+ Makefile against linuxcnc-uspace-dev) |
 | `configs/unoq-shield/` | LinuxCNC machine config (AXIS + headless) and test scripts |

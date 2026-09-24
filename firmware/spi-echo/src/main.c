@@ -1,5 +1,5 @@
 /*
- * ArduCNC SPI link test firmware (STM32U585 side).
+ * QStep SPI link test firmware (STM32U585 side).
  *
  * Linux (spidev0.0, master) clocks fixed-size frames into SPI3 (slave, DMA).
  * Each reply carries the previous request back so the master can check every
@@ -58,7 +58,7 @@ K_THREAD_DEFINE(report, 1024, report_thread, NULL, NULL, NULL,
 
 int main(void)
 {
-	printk("\narducnc spi-echo: frame %d bytes\n", FRAME_LEN);
+	printk("\nqstep spi-echo: frame %d bytes\n", FRAME_LEN);
 
 	if (matrix_start() != 0) {
 		printk("matrix: failed to start\n");

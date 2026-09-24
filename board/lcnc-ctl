@@ -1,13 +1,13 @@
 #!/bin/sh
-# Control the ArduCNC LinuxCNC instance on the UNO Q (run from an adb root shell).
+# Control the QStep LinuxCNC instance on the UNO Q (run from an adb root shell).
 #   lcnc-ctl start            start the AXIS service (auto-restarts when AXIS is closed)
 #   lcnc-ctl stop             stop LinuxCNC (service or a manual headless instance)
 #   lcnc-ctl restart
 #   lcnc-ctl start-headless   stop the service and run the no-GUI config (for scripted tests)
 #   lcnc-ctl run <cmd...>     run a command as the arduino user in the config dir
-CFG=/home/arduino/arducnc-config
+CFG=/home/arduino/qstep-config
 AS_ARDUINO="setpriv --reuid=arduino --regid=arduino --init-groups env HOME=/home/arduino DISPLAY=:1 LINUXCNC_FORCE_REALTIME=1"
-SERVICE=arducnc-linuxcnc
+SERVICE=qstep-linuxcnc
 
 wait_up() {
 	for i in $(seq 1 90); do

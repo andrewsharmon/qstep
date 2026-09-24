@@ -1,5 +1,13 @@
 # UNO Q bring-up log
 
+> **Project renamed from ArduCNC to QStep on 2026-09-24.** The entries below
+> keep the names in use at the time (for example `arducnc-fw`,
+> `6.16.0-rt-arducnc2`, `/home/arduino/arducnc-config`), since they record what
+> was actually built and measured. Current names: `qstep-fw`, kernel
+> `6.16.0-rt-qstep1`, `qstep-*` services, `/home/arduino/qstep-config`,
+> `/etc/qstep`, `/opt/qstep`. The HAL driver keeps its board-based name
+> `unoq_spi` (`unoq.*` pins).
+
 ## 2026-09-23/24: first session with hardware
 
 ### Board as received

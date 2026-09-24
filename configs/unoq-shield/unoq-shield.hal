@@ -1,4 +1,4 @@
-# ArduCNC UNO Q + CNC Shield v3
+# QStep UNO Q + CNC Shield v3
 loadrt [KINS]KINEMATICS
 loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS
 loadrt unoq_spi spi_speed=20000000

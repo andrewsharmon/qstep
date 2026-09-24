@@ -1,0 +1,14 @@
+[Unit]
+Description=QStep first boot: install config, back up and flash the STM32 firmware
+ConditionPathExists=!/var/lib/qstep/firstboot-done
+After=local-fs.target home-arduino.mount qstep-rt-tune.service
+Before=qstep-linuxcnc.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/qstep-firstboot
+RemainAfterExit=yes
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

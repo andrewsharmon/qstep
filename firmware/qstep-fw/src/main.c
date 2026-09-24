@@ -1,14 +1,14 @@
 /*
- * ArduCNC firmware for the UNO Q STM32U585.
+ * QStep firmware for the UNO Q STM32U585.
  *
- * SPI3 (DMA slave) exchanges one acnc_cmd/acnc_stat pair per LinuxCNC servo
- * period (see ../common/arducnc_proto.h). Commands feed the DDS stepgen in
+ * SPI3 (DMA slave) exchanges one qstep_cmd/qstep_stat pair per LinuxCNC servo
+ * period (see ../common/qstep_proto.h). Commands feed the DDS stepgen in
  * stepgen.c; the status frame for the next transfer is prepared as soon as a
  * command has been applied.
  *
  * Safety: if no valid command arrives for WATCHDOG_MS while enabled, stepping
  * stops and the drivers are disabled. The trip latches until the host sends a
- * command without ACNC_CMD_ENABLE (i.e. LinuxCNC goes through machine-off).
+ * command without QSTEP_CMD_ENABLE (i.e. LinuxCNC goes through machine-off).
  */
 
 #include <zephyr/kernel.h>
@@ -18,7 +18,7 @@
 #include <zephyr/sys/printk.h>
 #include <string.h>
 
-#include "arducnc_proto.h"
+#include "qstep_proto.h"
 #include "matrix.h"
 #include "stepgen.h"
 
@@ -34,13 +34,13 @@ static const struct spi_config spi_cfg = {
 };
 
 static union {
-	struct acnc_cmd cmd;
-	uint8_t raw[ACNC_FRAME_LEN];
+	struct qstep_cmd cmd;
+	uint8_t raw[QSTEP_FRAME_LEN];
 } rx __aligned(32);
 
 static union {
-	struct acnc_stat stat;
-	uint8_t raw[ACNC_FRAME_LEN];
+	struct qstep_stat stat;
+	uint8_t raw[QSTEP_FRAME_LEN];
 } tx __aligned(32);
 
 static volatile uint32_t frames_ok, frames_bad;
@@ -61,14 +61,14 @@ K_TIMER_DEFINE(watchdog, watchdog_fn, NULL);
 
 static void prepare_status(void)
 {
-	struct acnc_stat *s = &tx.stat;
+	struct qstep_stat *s = &tx.stat;
 
 	memset(s, 0, sizeof(*s));
-	s->magic = ACNC_STAT_MAGIC;
+	s->magic = QSTEP_STAT_MAGIC;
 	s->seq_echo = last_seq;
-	s->status = (stepgen_enabled() ? ACNC_ST_ENABLED : 0) | (wd_tripped ? ACNC_ST_WATCHDOG : 0) |
-		    (crc_seen ? ACNC_ST_CRC_SEEN : 0);
-	int32_t steps[ACNC_JOINTS];
+	s->status = (stepgen_enabled() ? QSTEP_ST_ENABLED : 0) | (wd_tripped ? QSTEP_ST_WATCHDOG : 0) |
+		    (crc_seen ? QSTEP_ST_CRC_SEEN : 0);
+	int32_t steps[QSTEP_JOINTS];
 	uint16_t imax, iavg;
 
 	stepgen_get_pos(steps);
@@ -79,13 +79,13 @@ static void prepare_status(void)
 	stepgen_isr_stats(&imax, &iavg);
 	s->isr_max_cycles = imax;
 	s->isr_avg_cycles = iavg;
-	s->proto_version = ACNC_PROTO_VERSION;
-	s->crc = acnc_crc16(s, ACNC_FRAME_LEN - 2);
+	s->proto_version = QSTEP_PROTO_VERSION;
+	s->crc = qstep_crc16(s, QSTEP_FRAME_LEN - 2);
 }
 
-static void apply_command(const struct acnc_cmd *c)
+static void apply_command(const struct qstep_cmd *c)
 {
-	bool want = c->flags & ACNC_CMD_ENABLE;
+	bool want = c->flags & QSTEP_CMD_ENABLE;
 
 	last_seq = c->seq;
 	last_frame_ms = k_uptime_get();
@@ -99,7 +99,7 @@ static void apply_command(const struct acnc_cmd *c)
 	if (want != stepgen_enabled()) {
 		stepgen_enable(want);
 	}
-	int32_t incr[ACNC_JOINTS];
+	int32_t incr[QSTEP_JOINTS];
 
 	memcpy(incr, c->dds_incr, sizeof(incr));
 	stepgen_set_incr(incr);
@@ -112,7 +112,7 @@ static void report_thread(void *a, void *b, void *c)
 	for (;;) {
 		k_msleep(1000);
 		uint16_t imax, iavg;
-		int32_t p[ACNC_JOINTS];
+		int32_t p[QSTEP_JOINTS];
 
 		stepgen_isr_stats(&imax, &iavg);
 		stepgen_get_pos(p);
@@ -127,8 +127,8 @@ K_THREAD_DEFINE(report, 1024, report_thread, NULL, NULL, NULL, K_LOWEST_APPLICAT
 
 int main(void)
 {
-	printk("\narducnc-fw proto %d, %d joints, base %u Hz\n", ACNC_PROTO_VERSION, ACNC_JOINTS,
-	       ACNC_BASE_FREQ_HZ);
+	printk("\nqstep-fw proto %d, %d joints, base %u Hz\n", QSTEP_PROTO_VERSION, QSTEP_JOINTS,
+	       QSTEP_BASE_FREQ_HZ);
 
 	if (stepgen_init() != 0) {
 		printk("stepgen init failed\n");
@@ -146,8 +146,8 @@ int main(void)
 
 	prepare_status();
 
-	struct spi_buf txb = {.buf = tx.raw, .len = ACNC_FRAME_LEN};
-	struct spi_buf rxb = {.buf = rx.raw, .len = ACNC_FRAME_LEN};
+	struct spi_buf txb = {.buf = tx.raw, .len = QSTEP_FRAME_LEN};
+	struct spi_buf rxb = {.buf = rx.raw, .len = QSTEP_FRAME_LEN};
 	struct spi_buf_set txs = {.buffers = &txb, .count = 1};
 	struct spi_buf_set rxs = {.buffers = &rxb, .count = 1};
 
@@ -157,8 +157,8 @@ int main(void)
 
 		gpio_pin_set_dt(&rdy, 0);
 
-		if (ret == ACNC_FRAME_LEN && rx.cmd.magic == ACNC_CMD_MAGIC &&
-		    rx.cmd.crc == acnc_crc16(rx.raw, ACNC_FRAME_LEN - 2)) {
+		if (ret == QSTEP_FRAME_LEN && rx.cmd.magic == QSTEP_CMD_MAGIC &&
+		    rx.cmd.crc == qstep_crc16(rx.raw, QSTEP_FRAME_LEN - 2)) {
 			frames_ok++;
 			apply_command(&rx.cmd);
 		} else {
