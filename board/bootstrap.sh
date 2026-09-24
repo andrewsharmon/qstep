@@ -37,6 +37,12 @@ STEPS=${STEPS:-" --all"}
 
 [ "$(id -u)" = 0 ] || { echo "Run as root (adb shell, or: sudo sh $0)"; exit 1; }
 
+# `adb shell` exports TMPDIR=/data/local/tmp (an Android path) which doesn't
+# exist on the UNO Q; apt/dpkg helpers then fail to create temp files.
+if [ -n "${TMPDIR:-}" ] && [ ! -d "$TMPDIR" ]; then
+	export TMPDIR=/tmp
+fi
+
 # ---- is this the Arduino image the kernel was built for? ----------------------
 if ! dpkg-query -W -f='${Status}' "$BASE_KERNEL_PKG" 2>/dev/null | grep -q " ok installed"; then
 	echo "This board does not run Arduino's UNO Q image $BASE_IMAGE ($BASE_KERNEL_PKG not installed)."
