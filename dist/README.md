@@ -11,7 +11,23 @@ kernel, the STM32 firmware or the HAL driver.
 | `firmware/arducnc-fw.elf` / `.bin` | STM32U585 firmware (flash at 0x08000000), CNC Shield v3 pinout | `firmware/arducnc-fw` (Zephyr, board `arduino_uno_q`) |
 | `SHA256SUMS` | checksums, verified by `tools/deploy.sh` | |
 
-## Install onto a board
+## Flash a complete image (easiest)
+
+`image/build-image.sh` produces `dist/image/arducnc-unoq-image-<date>-<commit>.tar.zst`
+(~2.6 GB, not stored in git; publish it as a release asset). It is Arduino's
+official UNO Q image **20250807-136** with everything below preinstalled.
+Flash it with Arduino's own tool; no build tools needed:
+
+```bash
+arduino-flasher-cli flash unoq ./arducnc-unoq-image-<date>-<commit>.tar.zst
+```
+
+Then unplug/replug. On first boot `arducnc-firstboot` copies the LinuxCNC config
+to `/home/arduino/arducnc-config`, backs up the STM32 flash to
+`/var/lib/arducnc/mcu-flash-backup.bin` and flashes the ArduCNC firmware;
+LinuxCNC + AXIS then start on display :1 (VNC, see below) and restart when closed.
+
+## Install onto an existing board
 
 With the board on USB (adb) and the Lima VM proxy running for `--packages`:
 

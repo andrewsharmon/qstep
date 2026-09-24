@@ -15,7 +15,13 @@
 #   --all       everything above, in that order
 #
 # Nothing here needs a build: all binaries come from dist/.
+#
+# IMAGE=1 install.sh ...  is used by image/build-image.sh inside a chroot of the
+# flashable image: no live actions (udev triggers, starting services, MCU access);
+# the config and firmware are staged under /opt/arducnc and applied on first boot
+# by arducnc-firstboot.service.
 set -eu
+IMAGE=${IMAGE:-0}
 
 STAGE=$(cd "$(dirname "$0")/.." && pwd)
 DIST=$STAGE/dist
@@ -57,10 +63,14 @@ step_kernel() {
 	# New entries get 2 tries: a kernel that fails to boot twice falls back to the previous one.
 	run "echo 2 > /etc/kernel/tries"
 	# Kernel command line for new entries = current one (minus the initrd= prefix) + CPU isolation.
-	cmdline=$(sed -e 's/^initrd=[^ ]* //' -e 's/ isolcpus=[^ ]*//; s/ nohz_full=[^ ]*//; s/ rcu_nocbs=[^ ]*//; s/ irqaffinity=[^ ]*//' /proc/cmdline)
+	# In an image there is no running kernel; start from the image's /etc/kernel/cmdline.
+	if [ "$IMAGE" = 1 ]; then src=/etc/kernel/cmdline; else src=/proc/cmdline; fi
+	cmdline=$(sed -e 's/^ *//; s/^initrd=[^ ]* //' -e 's/ isolcpus=[^ ]*//; s/ nohz_full=[^ ]*//; s/ rcu_nocbs=[^ ]*//; s/ irqaffinity=[^ ]*//' $src)
 	run "echo '$cmdline $ISOL' > /etc/kernel/cmdline"
 	run "dpkg -i '$deb'"
 	run "sync"
+	# Show the boot menu for 3 s (lets a keyboard+HDMI user pick the stock kernel).
+	run "sed -i 's/^#timeout 3/timeout 3/' /boot/efi/loader/loader.conf"
 	echo "   kernel installed; POWER-CYCLE the board (unplug/replug) to boot it"
 }
 
@@ -68,19 +78,24 @@ step_system() {
 	echo "== system services"
 	b=$STAGE/board
 	run "install -m 644 $b/60-arducnc.rules /etc/udev/rules.d/"
-	run "udevadm control --reload && udevadm trigger --name-match=spidev0.0 && udevadm trigger --name-match=cpu_dma_latency"
-	run "install -m 755 $b/arducnc-rt-tune /usr/local/sbin/"
+	[ "$IMAGE" = 1 ] || run "udevadm control --reload && udevadm trigger --name-match=spidev0.0 && udevadm trigger --name-match=cpu_dma_latency"
+	run "install -m 755 $b/arducnc-rt-tune $b/arducnc-firstboot /usr/local/sbin/"
 	run "install -m 755 $b/lcnc-ctl $b/soak-start /usr/local/bin/"
-	run "install -m 644 $b/arducnc-rt-tune.service $b/arducnc-xvfb.service $b/arducnc-vnc.service $b/arducnc-linuxcnc.service /etc/systemd/system/"
+	run "install -m 644 $b/arducnc-rt-tune.service $b/arducnc-xvfb.service $b/arducnc-vnc.service $b/arducnc-linuxcnc.service $b/arducnc-firstboot.service /etc/systemd/system/"
 	run "mkdir -p /etc/arducnc && chown arduino:arduino /etc/arducnc && chmod 700 /etc/arducnc"
 	# LinuxCNC 2.9 only trusts /sys/kernel/realtime, which mainline PREEMPT_RT lacks.
 	run "grep -q '^LINUXCNC_FORCE_REALTIME=1' /etc/environment || echo LINUXCNC_FORCE_REALTIME=1 >> /etc/environment"
 	run "printf '# LinuxCNC 2.9 looks for /sys/kernel/realtime, which mainline PREEMPT_RT no longer provides.\nexport LINUXCNC_FORCE_REALTIME=1\n' > /etc/profile.d/linuxcnc-rt.sh"
 	# arduino-router owns the MCU UART and BOOT0; arducnc-rt-tune now holds BOOT0 low instead.
-	run "systemctl disable --now arduino-router.service arduino-app-cli.service 2>/dev/null || true"
-	run "systemctl daemon-reload"
-	run "systemctl enable --now arducnc-rt-tune.service arducnc-xvfb.service arducnc-vnc.service"
-	run "systemctl enable arducnc-linuxcnc.service"
+	if [ "$IMAGE" = 1 ]; then
+		run "systemctl disable arduino-router.service arduino-app-cli.service 2>/dev/null || true"
+		run "systemctl enable arducnc-rt-tune.service arducnc-xvfb.service arducnc-vnc.service arducnc-linuxcnc.service arducnc-firstboot.service"
+	else
+		run "systemctl disable --now arduino-router.service arduino-app-cli.service 2>/dev/null || true"
+		run "systemctl daemon-reload"
+		run "systemctl enable --now arducnc-rt-tune.service arducnc-xvfb.service arducnc-vnc.service"
+		run "systemctl enable arducnc-linuxcnc.service"
+	fi
 	echo "   VNC has no password until you run: x11vnc -storepasswd /etc/arducnc/vnc.pass (then systemctl restart arducnc-vnc)"
 }
 
@@ -90,8 +105,15 @@ step_hal() {
 }
 
 step_config() {
-	echo "== LinuxCNC config -> $CFG_DST"
 	src=$STAGE/configs/unoq-shield
+	if [ "$IMAGE" = 1 ]; then
+		# /home/arduino is the userdata partition, which the flasher may keep;
+		# stage the config in the rootfs and let arducnc-firstboot copy it.
+		echo "== LinuxCNC config -> /opt/arducnc/config (copied to $CFG_DST on first boot)"
+		run "mkdir -p /opt/arducnc && rm -rf /opt/arducnc/config && cp -r $src /opt/arducnc/config"
+		return
+	fi
+	echo "== LinuxCNC config -> $CFG_DST"
 	run "mkdir -p $CFG_DST/nc_files"
 	for f in unoq-shield.ini unoq-shield-headless.ini unoq-shield.hal sim-loopback.ini sim-loopback.hal tool.tbl; do
 		run "install -m 644 $src/$f $CFG_DST/"
@@ -106,6 +128,11 @@ step_config() {
 }
 
 step_firmware() {
+	if [ "$IMAGE" = 1 ]; then
+		echo "== STM32 firmware -> /opt/arducnc/firmware (flashed on first boot)"
+		run "mkdir -p /opt/arducnc/firmware && install -m 644 $DIST/firmware/arducnc-fw.elf $DIST/firmware/arducnc-fw.bin /opt/arducnc/firmware/"
+		return
+	fi
 	echo "== STM32 firmware"
 	ocd="cd /opt/openocd && ./bin/openocd -s /opt/openocd -f openocd_gpiod.cfg"
 	run "mkdir -p /root/arducnc"

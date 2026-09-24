@@ -1,0 +1,14 @@
+[Unit]
+Description=ArduCNC first boot: install config, back up and flash the STM32 firmware
+ConditionPathExists=!/var/lib/arducnc/firstboot-done
+After=local-fs.target home-arduino.mount arducnc-rt-tune.service
+Before=arducnc-linuxcnc.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/arducnc-firstboot
+RemainAfterExit=yes
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

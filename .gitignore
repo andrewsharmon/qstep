@@ -17,3 +17,5 @@
 
 .DS_Store
 *.ppm
+/dist/image/
+/image/build.log
