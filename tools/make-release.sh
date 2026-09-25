@@ -6,7 +6,8 @@
 #   tools/make-release.sh <version> [release-url]
 #
 # Produces release/<version>/:
-#   qstep-<version>.tar.gz (+ .sha256)  prebuilt dist/ files, board/ scripts, configs/
+#   qstep-<version>.tar.gz (+ .sha256)  prebuilt dist/ files, board/ scripts, configs/, docs
+#                                       (only files tracked in git)
 #   qstep-bootstrap.sh                  step-2 installer with the version and URL filled in
 # release-url defaults to the GitHub release download URL for the tag v<version>
 # in andrewsharmon/qstep; set QSTEP_REPO=owner/repo (or pass the URL) for a fork.
@@ -17,10 +18,16 @@ REPO=${QSTEP_REPO:-andrewsharmon/qstep}
 URL=${2:-https://github.com/$REPO/releases/download/v$VER}
 OUT=$ROOT/release/$VER
 
+# What goes into the bundle.
+FILES="dist/kernel dist/hal dist/firmware dist/SHA256SUMS dist/README.md board configs
+	README.md TODO.md NOTICE COPYING LICENSES"
+export COPYFILE_DISABLE=1
+
 cd "$ROOT"
 shasum -a 256 -c dist/SHA256SUMS >/dev/null
-if [ -n "$(git status --porcelain -- dist board configs)" ]; then
-	echo "dist/, board/ or configs/ have uncommitted changes; commit first so the release is traceable"
+# shellcheck disable=SC2086
+if [ -n "$(git status --porcelain -- $FILES)" ]; then
+	echo "files that go into the bundle have uncommitted changes; commit first so the release is traceable"
 	exit 1
 fi
 
@@ -28,9 +35,9 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
-mkdir -p "$STAGE/dist"
-cp -R dist/kernel dist/hal dist/firmware dist/SHA256SUMS dist/README.md "$STAGE/dist/"
-cp -R board configs README.md NOTICE COPYING LICENSES "$STAGE/"
+# Only files tracked in git, so no .DS_Store or other local leftovers ship.
+# shellcheck disable=SC2086
+git ls-files -z -- $FILES | tar --null -T - -cf - | tar -C "$STAGE" -xf -
 {
 	echo "QStep $VER"
 	echo "source: $(git rev-parse HEAD)"
@@ -39,7 +46,7 @@ cp -R board configs README.md NOTICE COPYING LICENSES "$STAGE/"
 
 # Reproducible-ish tarball: fixed owner, no macOS metadata/xattrs (Linux tar warns on them).
 xattr -rc "$STAGE" 2>/dev/null || true
-COPYFILE_DISABLE=1 tar -C "$STAGE" --no-xattrs --no-mac-metadata --uid 0 --gid 0 \
+tar -C "$STAGE" --no-xattrs --no-mac-metadata --no-fflags --uid 0 --gid 0 \
 	--uname root --gname root -czf "$OUT/qstep-$VER.tar.gz" .
 (cd "$OUT" && shasum -a 256 "qstep-$VER.tar.gz" > "qstep-$VER.tar.gz.sha256")
 
