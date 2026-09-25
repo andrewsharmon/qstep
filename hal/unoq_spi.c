@@ -36,7 +36,8 @@
  *   unoq.N.velocity-cmd   float out   commanded velocity (units/s)
  *   unoq.N.freq           float out   commanded step rate (steps/s)
  *   unoq.enable           bit   in    enable the stepper drivers (EN pin)
- *   unoq.connected        bit   out   valid status frames are arriving
+ *   unoq.connected        bit   out   valid status frames are arriving (and the MCU
+ *                                     firmware speaks this driver's protocol version)
  *   unoq.watchdog         bit   out   MCU link watchdog tripped (toggle enable to clear)
  *   unoq.enabled          bit   out   MCU reports drivers enabled
  *   unoq.link-errors      u32   out   failed transfers / bad status frames
@@ -96,6 +97,7 @@ static const char *output_names[NUM_OUTPUTS] = {"spindle-enable", "spindle-dir",
 #define STEP_RATE_MAX   (QSTEP_BASE_FREQ_HZ / 2.0)
 #define DDS_PER_HZ      (4294967296.0 / QSTEP_BASE_FREQ_HZ)
 #define MAX_FB_AGE      16 /* status older than this many commands = not connected */
+#define MAX_LATE        16 /* periods an unfinished transfer may stay pending */
 
 typedef struct {
 	hal_float_t *position_cmd;
@@ -158,6 +160,9 @@ static struct {
 	int32_t count_offset[QSTEP_JOINTS];
 	int32_t counts[QSTEP_JOINTS];      /* latest reported, relative to count_offset */
 	uint8_t counts_seq;               /* command the counts were sampled after */
+	uint8_t stalled;                  /* periods without a new counts_seq, saturating */
+	uint8_t late_run;                 /* consecutive periods the worker was still busy */
+	int proto_warned;
 	double v_ring[QSTEP_JOINTS][256];  /* steps/s commanded with each seq */
 	uint8_t dur_ring[256];            /* periods each seq stayed in effect */
 	double old_cmd[QSTEP_JOINTS];
@@ -207,6 +212,18 @@ static int collect_reply(void)
 		(*h->link_errors)++;
 		return -EIO;
 	}
+	if (rx.stat.proto_version != QSTEP_PROTO_VERSION) {
+		/* Mismatched firmware: never trust its frames. */
+		if (!st.proto_warned) {
+			rtapi_print_msg(RTAPI_MSG_ERR,
+					"unoq_spi: MCU firmware speaks protocol %u, this driver %u; "
+					"flash the matching qstep-fw\n",
+					rx.stat.proto_version, QSTEP_PROTO_VERSION);
+			st.proto_warned = 1;
+		}
+		(*h->link_errors)++;
+		return -EPROTO;
+	}
 
 	int32_t steps[QSTEP_JOINTS];
 
@@ -234,6 +251,7 @@ static int collect_reply(void)
 static void update(void *arg, long period)
 {
 	const double dt = period * 1e-9;
+	uint8_t prev_counts_seq = st.counts_seq;
 	int got = collect_reply();
 
 	if (got == -EBUSY) {
@@ -242,12 +260,27 @@ static void update(void *arg, long period)
 		if (st.dur_ring[st.seq] < 255) {
 			st.dur_ring[st.seq]++;
 		}
+		/* A transfer that never finishes must not leave `connected` set. */
+		if (st.late_run < MAX_LATE) {
+			st.late_run++;
+		} else {
+			*h->connected = 0;
+		}
 		return;
+	}
+	st.late_run = 0;
+
+	/* Each good reply normally confirms one more command. Count the periods
+	 * without that; unlike the 8-bit `age` below, this can't wrap around. */
+	if (got == 0 && st.counts_seq != prev_counts_seq) {
+		st.stalled = 0;
+	} else if (st.stalled < MAX_FB_AGE) {
+		st.stalled++;
 	}
 
 	/* How many commands have been applied since the counts were sampled. */
 	uint8_t age = (uint8_t)(st.seq - st.counts_seq);
-	int fresh = st.have_fb && age < MAX_FB_AGE;
+	int fresh = st.have_fb && age < MAX_FB_AGE && st.stalled < MAX_FB_AGE;
 
 	*h->connected = fresh && got == 0;
 	int drivers_on = *h->enable && fresh;
