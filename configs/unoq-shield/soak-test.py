@@ -19,7 +19,6 @@ import linuxcnc
 
 DURATION = 60.0
 RANGE = 2.0          # rev either side of the start position
-STEPS_PER_REV = 6400
 s, c = linuxcnc.stat(), linuxcnc.command()
 
 
@@ -36,6 +35,9 @@ def wait_for(pred, timeout, what):
 
 def hal(name):
     return subprocess.run(["halcmd", "getp", name], capture_output=True, text=True).stdout.strip()
+
+
+STEPS_PER_REV = float(hal("unoq.1.position-scale"))  # Y's SCALE from the INI
 
 
 def settled():

@@ -12,8 +12,8 @@ import time
 
 import linuxcnc
 
-# Relative Y moves in revolutions (6400 steps/rev): +0.45, +0.19 (-> 0.64), +0.51, -1.15 steps.
-STEPS = [0.00007, 0.00003, 0.00008, -0.00018]
+# Relative Y moves in motor steps, each ending between two steps; they sum to 0.
+STEPS = [0.45, 0.19, 0.51, -1.15]
 s, c = linuxcnc.stat(), linuxcnc.command()
 
 
@@ -28,9 +28,15 @@ def wait_for(pred, timeout, what):
     sys.exit(f"timeout waiting for {what}")
 
 
+def hal(name):
+    return subprocess.run(["halcmd", "getp", name], capture_output=True, text=True).stdout.strip()
+
+
 def counts():
-    out = subprocess.run(["halcmd", "getp", "unoq.1.counts"], capture_output=True, text=True)
-    return int(out.stdout.strip())
+    return int(hal("unoq.1.counts"))
+
+
+STEPS_PER_REV = float(hal("unoq.1.position-scale"))  # Y's SCALE from the INI
 
 
 def settled():
@@ -53,8 +59,9 @@ wait_for(settled, 5, "G91")
 
 start = counts()
 print(f"start: Y machine={s.actual_position[1]:.5f} rev, counts={start}")
-for d in STEPS:
-    c.mdi(f"G0 Y{d}")
+for n in STEPS:
+    d = n / STEPS_PER_REV
+    c.mdi(f"G0 Y{d:.8f}")
     c.wait_complete(5)
     time.sleep(0.2)
     wait_for(settled, 5, "move")
@@ -65,7 +72,7 @@ for d in STEPS:
         time.sleep(0.05)
     changes = sum(1 for a, b in zip(samples, samples[1:]) if a != b)
     s.poll()
-    print(f"G91 G0 Y{d:+.5f}: cmd={s.joint[1]['output'] if 'output' in s.joint[1] else 0:+.5f}  "
+    print(f"G91 G0 Y{d:+.8f} ({n:+.2f} steps): cmd={s.joint[1]['output'] if 'output' in s.joint[1] else 0:+.5f}  "
           f"counts held at {sorted(set(samples))}  changes in 2 s: {changes}")
 
 c.mdi("G90")

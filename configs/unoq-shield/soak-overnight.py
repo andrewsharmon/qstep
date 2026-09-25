@@ -28,7 +28,6 @@ import time
 import linuxcnc
 
 RANGE = 2.0
-STEPS_PER_REV = 6400
 STRESS_S = 60
 
 ap = argparse.ArgumentParser()
@@ -58,6 +57,9 @@ def hal(name):
 
 def hal_int(name):
     return int(hal(name), 0)
+
+
+STEPS_PER_REV = float(hal("unoq.1.position-scale"))  # Y's SCALE from the INI
 
 
 def settled():
