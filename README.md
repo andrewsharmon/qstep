@@ -16,10 +16,19 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
 > a **DRV8825** driver module. Other axes, drivers, inputs and outputs are wired
 > up but untested. See [TODO.md](TODO.md).
 
+> [!WARNING]
+> **Safety:** QStep drives stepper motors, and it has **no hardware e-stop and no limit
+> or home switches yet**. The only e-stop is in software: LinuxCNC's own, and
+> the MCU turning the drivers off when the SPI link from Linux stops. Only run it
+> on the bench or on a machine that can't hurt anyone, and keep a way to cut the
+> motor power within reach. QStep comes with no warranty (see the GPL).
+
 - **Status and measurements:** [docs/BRINGUP_LOG.md](docs/BRINGUP_LOG.md)
 - **Original feasibility study:** [docs/PORTING_ASSESSMENT.md](docs/PORTING_ASSESSMENT.md)
 - **Install (no build tools needed):** flash Arduino's official image 20250807-136 with
-  `arduino-flasher-cli`, then run `qstep-bootstrap.sh` on the board. See [dist/README.md](dist/README.md).
+  `arduino-flasher-cli`, then run
+  [`qstep-bootstrap.sh`](https://github.com/andrewsharmon/qstep/releases/latest/download/qstep-bootstrap.sh)
+  from the latest release on the board. See [dist/README.md](dist/README.md).
 
 | Path | Contents |
 |---|---|
@@ -36,6 +45,13 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
 
 Building from source needs the Lima VM (Debian 13 arm64), the Zephyr SDK and the
 `vendor/` clones, which aren't committed. See the bring-up log for the exact steps.
+
+The prebuilt files in `dist/` are stored with Git LFS (about 40 MB, mostly the
+kernel). To clone only the source, skip them:
+
+```bash
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/andrewsharmon/qstep.git
+```
 
 ## Standing on the shoulders of giants
 
@@ -77,6 +93,6 @@ QStep is free software, licensed under the **GNU General Public License,
 version 2 or later** ([COPYING](COPYING)). The kernel patches are GPL-2.0-only,
 and one Arduino-derived firmware file is Apache-2.0. The prebuilt firmware image
 is distributed under GPL-3.0-or-later, because it links with Apache-2.0 Zephyr
-code. Every file carries an SPDX identifier. [NOTICE](NOTICE) lists third-party
+code. Every source file carries an SPDX identifier. [NOTICE](NOTICE) lists third-party
 components and the source for every binary in `dist/`. License texts are in
 [LICENSES/](LICENSES/).

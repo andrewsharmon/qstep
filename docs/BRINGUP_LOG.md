@@ -5,8 +5,8 @@
 > `6.16.0-rt-arducnc2`, `/home/arduino/arducnc-config`), since they record what
 > was actually built and measured. Current names: `qstep-fw`, kernel
 > `6.16.0-rt-qstep1`, `qstep-*` services, `/home/arduino/qstep-config`,
-> `/etc/qstep`, `/opt/qstep`. The HAL driver keeps its board-based name
-> `unoq_spi` (`unoq.*` pins).
+> `/etc/qstep`, `/opt/qstep`, and the local-only `../qstep-private`. The HAL
+> driver keeps its board-based name `unoq_spi` (`unoq.*` pins).
 
 ## 2026-09-23/24: first session with hardware
 
@@ -197,7 +197,7 @@ Note: the STM32 isn't touched by the Linux flasher, so on this board the "stock"
 
 ## 2026-09-24: TMC2208 on Y, PASS (with caveats)
 
-- A standalone TMC2208 replaced the DRV8825 in the Y slot, with the same shield jumpers (MS1+MS2 fitted, so **1/16 microstepping, 3200 steps/rev**). `[JOINT_1] SCALE` is now 3200; X and Z stay at 6400 for the DRV8825.
+- A standalone TMC2208 replaced the DRV8825 in the Y slot, with the same shield jumpers (MS1+MS2 fitted, so **1/16 microstepping, 3200 steps/rev**). `[JOINT_1] SCALE` is now 3200; X and Z stay at 6400 for the DRV8825. (Later the shipped config went back to 6400 on every joint, matching the documented DRV8825 setup. This bench board keeps 3200 in its installed INI, so don't reinstall `--config` on it without re-applying that.)
 - Scale check: 1600 steps turned the shaft 180°. After the change, `G91 G1 Y1 F30` / `Y-1` made exactly one turn and came back to a shaft mark. The step count returned to 0, and the link had 0 late, 0 errors, 0 bad frames.
 - **Stalls at speed:** with the old scale, F300 actually ran about 5 rev/s and the motor stalled a few times near peak. That is the configured Y maximum, so Vref (current) and/or Y `MAX_VELOCITY` still need tuning. StealthChop (the standalone default) loses torque at speed.
 - The UNO Q drives 3.3 V logic, and the TMC2208 wants 0.7 × VIO = 3.5 V from the shield's 5 V rail. It works on the bench but is out of spec.
@@ -209,10 +209,18 @@ Note: the STM32 isn't touched by the Linux flasher, so on this board the "stock"
 - **Cause:** `lcnc-ctl stop` had become a plain `systemctl stop`. With `KillMode=mixed`, only the `linuxcnc` bash script gets SIGTERM, and bash runs its `Cleanup` trap only after its foreground child exits. That child is AXIS, which ignores SIGTERM, so nothing happened until the SIGKILL.
 - **Fix:** `qstep-linuxcnc.service` now has `ExecStop=lcnc-ctl quit-gui`. As arduino on :1, it runs `axis-remote --quit`, falls back to SIGKILL on the `axis` process alone after 10 s, then waits for the linuxcnc script to finish its own cleanup (HAL unload, realtime stop, lock removal). `ExecStartPre=lcnc-ctl clean-stale` runs on every start and auto-restart: if the lock exists and no LinuxCNC process (`linuxcnc|linuxcncsvr|milltask|io|rtapi_app|axis`) is running, it runs `halrun -U` and removes the lock. If a LinuxCNC process is still running, the start fails instead of opening a dialog nobody can see. `lcnc-ctl start-headless` does the same check.
 
+## 2026-09-24: Pre-release fixes, PASS
+
+- **VNC always needs a password.** The documented `x11vnc -storepasswd /etc/qstep/vnc.pass`, run as root, writes a root-only (0600) file. `qstep-vnc` runs as arduino, couldn't read it, and silently fell back to `-nopw`. Confirmed on the board. Now:
+  - `qstep-vnc.service` has no no-password mode. Without a readable, non-empty `/etc/qstep/vnc.pass` it exits 78 with a message in the journal, and isn't retried (`RestartPreventExitStatus=78`).
+  - `qstep-vnc-passwd` (as root) prompts twice with echo off, or reads one line from stdin. It refuses an empty password, writes the file as arduino with mode 0600, and restarts VNC.
+  - `install.sh --system` restarts VNC if a password exists. Otherwise it stops VNC (so an older no-password server doesn't keep running) and prints how to set one.
+  - Tested: no file, failed with 0 restarts; root-owned file, failed; empty and mismatched passwords refused; the stdin and terminal paths both work. Through `adb forward`, x11vnc offers only security type 2 (VNC password), and asking for type 1 (None) closes the connection.
+- **A failed firmware flash no longer passes.** `install.sh --firmware` piped OpenOCD into a grep that also matched `Error: flash` and `Error: Verification`, so a failed flash reported success. It now requires `Verified OK` (log in `/root/qstep/firmware-flash.log`) and exits 1 otherwise. The MCU backup is dumped to a temporary file first, so a failed dump isn't taken for a backup later. Tested: missing ELF gave `FIRMWARE FLASH FAILED` and exit 1; a normal run wrote the backup and reported `Verified OK` (164 s, most of it the 2 MB dump). OpenOCD also reports `Verified OK` for an empty image, which the `SHA256SUMS` check before every install catches.
+- **HAL link state** (`unoq_spi.so` rebuilt, sha256 `f089ca3b…`). `unoq.connected` now drops when a transfer stays unfinished for 16 periods; before, it kept its last value. Stale feedback is also tracked with a saturating counter, because the 8-bit sequence age wrapped around after 256 periods of silence. Status frames from firmware with a different `proto_version` are rejected, with one error message. The HAL build is reproducible: the previous source, rebuilt in the VM, gives exactly the previous `dist/` hash.
+  - Link-loss test (machine on, no motion, MCU halted over SWD for 1 s): `connected` dropped, LinuxCNC went to e-stop 0.2 s later, the link came back on resume, and machine-on worked again. The halted MCU makes transfers fail their CRC, so this covers the error path. The unfinished-transfer and protocol-mismatch paths weren't triggered on hardware.
+  - hold-test: 0 count changes at every sub-step target. soak-test: 45 moves, max following error 4.1 steps, 0-step return error, link 0 late / 0 errors / 0 bad frames, servo tmax 261 µs.
+- **The shipped config is back to 6400 steps/rev on Y** (DRV8825 at 1/32, the documented setup). This bench board keeps `SCALE = 3200` on Y in its installed INI for the TMC2208; only `--system` and `--hal` were redeployed. `hold-test.py`, `soak-test.py` and `soak-overnight.py` now read Y's scale from `unoq.1.position-scale` instead of assuming 6400 (the tests above ran at 3200).
+
 ### Next
-- Get the per-transfer overhead down further: 5 IRQs per frame in FIFO mode. Options are GPI DMA mode, or a single transfer with CS handled in hardware.
-- Set real SCALE (steps/mm) and limits once the microstepping jumpers and mechanics are known.
-- Attach a display and switch the config to AXIS. Measure GUI load against servo-thread jitter.
-- Hardware e-stop input, and limit/home switches through `unoq.input.*`. Spindle PWM.
-- Scope the STEP/DIR pins to verify pulse width, dir setup and jitter.
-- Run a LinuxCNC sim config with AXIS on the HDMI display to check GUI load.
+Open work is tracked in [TODO.md](../TODO.md).

@@ -1,6 +1,6 @@
 # QStep TODO
 
-## Tested so far (v0.1.0)
+## Tested so far
 
 QStep has only been tested in this configuration:
 
@@ -38,8 +38,9 @@ coolant outputs) is wired up but **untested**.
   realistic accelerations.
 - [ ] **Millimetre units:** set `SCALE = steps_per_rev x microsteps / mm_per_rev` per
   axis once the mechanics are known, plus real limits and speeds.
-- [ ] **Other drivers:** TMC2208 standalone runs on Y at 1/16 (3200 steps/rev),
-  but stalls near 5 rev/s: tune Vref and the Y speed limit. A4988 and TMC2208/2209
+- [ ] **Other drivers:** TMC2208 standalone runs on Y at 1/16 (`SCALE = 3200`; the
+  shipped config assumes 1/32, 6400), but stalls near 5 rev/s: tune Vref and the Y
+  speed limit. A4988 and TMC2208/2209
   need a logic high of 0.7 x VDD, so feed the shield's "5V" rail from 3.3 V. Also
   test TMC2209 and external step/dir drivers.
 - [ ] Scope the STEP/DIR pins to confirm pulse width, direction setup and jitter.
@@ -64,4 +65,6 @@ coolant outputs) is wired up but **untested**.
   prepare_message).
 - [ ] When the repo goes public: check the bootstrap's built-in download URL works
   anonymously, and consider CI (arm64 runners) to build and publish releases.
-- [ ] VNC setup without the password step (macOS Screen Sharing requires one).
+- [ ] Ask for the VNC password during the bootstrap, so VNC works right after the
+  power cycle (VNC never runs without a password; today that's a separate
+  `qstep-vnc-passwd` step).

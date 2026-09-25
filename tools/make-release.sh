@@ -1,15 +1,15 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Copyright (C) 2026 andrewsharmon
-# Package an QStep release for manual upload (e.g. to a GitHub release):
+# Package a QStep release for manual upload (e.g. to a GitHub release):
 #
 #   tools/make-release.sh <version> [release-url]
 #
 # Produces release/<version>/:
 #   qstep-<version>.tar.gz (+ .sha256)  prebuilt dist/ files, board/ scripts, configs/
 #   qstep-bootstrap.sh                  step-2 installer with the version and URL filled in
-# release-url defaults to the GitHub release download URL for the tag v<version>;
-# set QSTEP_REPO=owner/repo (or pass the URL) once the repo has a home.
+# release-url defaults to the GitHub release download URL for the tag v<version>
+# in andrewsharmon/qstep; set QSTEP_REPO=owner/repo (or pass the URL) for a fork.
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 VER=${1:?usage: make-release.sh <version> [release-url]}

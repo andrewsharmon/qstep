@@ -64,16 +64,20 @@ side, laid out like the photo in
    always be retried.
 
 Go through Arduino's first-boot setup so the board has Wi-Fi (internet is needed
-for the Debian packages in step 2).
+for the Debian packages in step 2). So far the install has only been tested with
+the board online through a proxy over USB (see the bring-up log), not over Wi-Fi.
 
 **Step 2: install QStep on the board.** Get a root shell on the board (from your
 computer: `adb shell`, or `sudo -i` in a terminal on the board), download the
-bootstrap script from the release, and run it:
+bootstrap script from the latest release, and run it:
 
 ```bash
-curl -fsSLO https://github.com/andrewsharmon/qstep/releases/download/v<version>/qstep-bootstrap.sh
+curl -fsSLO https://github.com/andrewsharmon/qstep/releases/latest/download/qstep-bootstrap.sh
 sh qstep-bootstrap.sh
 ```
+
+For a specific release, use `.../releases/download/v<version>/qstep-bootstrap.sh`
+instead. Each bootstrap script installs the release it came with.
 
 It checks that the board runs the right Arduino image, then downloads and verifies
 the release bundle and installs everything:
@@ -82,21 +86,34 @@ the release bundle and installs everything:
 - the services and the HAL driver;
 - the machine config.
 
-It also backs up the STM32's original flash to `/root/qstep/mcu-flash-backup.bin`
-and flashes the QStep firmware.
+It also backs up the STM32's flash to `/root/qstep/mcu-flash-backup.bin` and
+flashes the QStep firmware. Arduino's flasher doesn't touch the STM32, so on a
+board that has run QStep before, that backup holds the older QStep firmware
+rather than Arduino's.
 
 Then **power-cycle** the board (unplug and replug; a warm reboot doesn't pick up
 the new kernel on the UNO Q). LinuxCNC + AXIS start automatically on display :1.
-To view it over VNC, set a password on the board, then connect from your computer:
+
+AXIS is shown over VNC, which **stays off until you set a VNC password**. There's
+no no-password mode. As root on the board, run this and type the password twice
+(VNC only uses the first 8 characters):
 
 ```bash
-x11vnc -storepasswd /etc/qstep/vnc.pass && systemctl restart qstep-vnc
+qstep-vnc-passwd
 ```
+
+The VNC server only listens on the board's localhost. Connect from your computer
+through adb (or an SSH tunnel to port 5900):
 
 ```bash
 adb forward tcp:5900 tcp:5900
+```
+
+```bash
 open vnc://127.0.0.1:5900
 ```
+
+If VNC doesn't come up, `journalctl -u qstep-vnc` says why.
 
 Offline alternative: copy `qstep-<version>.tar.gz` (and its `.sha256`) to the board
 and run `sh qstep-bootstrap.sh --bundle qstep-<version>.tar.gz`.
