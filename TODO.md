@@ -63,8 +63,7 @@ coolant outputs) is wired up but **untested**.
   only matches image 20250807-136).
 - [ ] Offer the kernel patch upstream (spi-geni-qcom: don't reprogram the clock in
   prepare_message).
-- [ ] When the repo goes public: check the bootstrap's built-in download URL works
-  anonymously, and consider CI (arm64 runners) to build and publish releases.
+- [ ] Consider CI (arm64 runners) to build and publish releases.
 - [ ] Ask for the VNC password during the bootstrap, so VNC works right after the
   power cycle (VNC never runs without a password; today that's a separate
   `qstep-vnc-passwd` step).
