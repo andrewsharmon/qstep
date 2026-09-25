@@ -91,10 +91,12 @@ cat <<EOF
 QStep is installed. Next:
   1. Power-cycle the board (unplug and replug USB-C) to boot the real-time kernel.
      (A warm "reboot" is not enough on the UNO Q.)
-  2. To use AXIS over VNC, set a password once:
-       x11vnc -storepasswd /etc/qstep/vnc.pass && systemctl restart qstep-vnc
+  2. AXIS is shown over VNC, which stays off until you set a password
+     (it never runs without one). As root on the board:
+       qstep-vnc-passwd
      then on your computer: adb forward tcp:5900 tcp:5900 ; open vnc://127.0.0.1:5900
-  3. Machine config: /home/arduino/qstep-config/unoq-shield.ini (units: motor revolutions;
-     set SCALE = 6400 / mm-per-rev for your mechanics).
+  3. Machine config: /home/arduino/qstep-config/unoq-shield.ini (units: motor revolutions,
+     SCALE 6400 steps/rev at 1/32 microstepping; set SCALE = steps-per-rev / mm-per-rev
+     for your mechanics).
 The STM32's original firmware was saved to /root/qstep/mcu-flash-backup.bin.
 EOF

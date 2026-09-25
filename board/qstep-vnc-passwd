@@ -1,0 +1,46 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026 andrewsharmon
+# Set the VNC password for AXIS on display :1, then (re)start qstep-vnc.
+# qstep-vnc never runs without a password. Run as root:
+#   qstep-vnc-passwd                  prompts twice (needs a terminal)
+#   echo SECRET | qstep-vnc-passwd    reads one line from stdin
+# VNC only uses the first 8 characters of the password.
+set -eu
+DIR=/etc/qstep
+PASS=$DIR/vnc.pass
+
+[ "$(id -u)" = 0 ] || { echo "run as root (adb shell, or sudo)"; exit 1; }
+
+if [ -t 0 ]; then
+	trap 'stty echo' EXIT INT TERM
+	stty -echo
+	printf 'New VNC password: '
+	IFS= read -r pw
+	printf '\nRepeat it: '
+	IFS= read -r pw2
+	stty echo
+	echo
+	[ "$pw" = "$pw2" ] || { echo "The passwords differ; nothing changed." >&2; exit 1; }
+else
+	IFS= read -r pw || true
+fi
+[ -n "$pw" ] || { echo "An empty password isn't allowed; nothing changed." >&2; exit 1; }
+[ ${#pw} -le 8 ] || echo "Note: VNC only uses the first 8 characters."
+
+# The file must be readable by the arduino user, who runs x11vnc.
+install -d -o arduino -g arduino -m 700 $DIR
+umask 077
+rm -f $PASS.new
+x11vnc -storepasswd "$pw" $PASS.new >/dev/null 2>&1 || { echo "x11vnc -storepasswd failed" >&2; rm -f $PASS.new; exit 1; }
+chown arduino:arduino $PASS.new
+mv -f $PASS.new $PASS
+
+systemctl restart qstep-vnc.service
+sleep 2
+if systemctl is-active -q qstep-vnc.service; then
+	echo "VNC password set; qstep-vnc is running (127.0.0.1:5900 on the board)."
+else
+	echo "VNC password set, but qstep-vnc didn't start: journalctl -u qstep-vnc" >&2
+	exit 1
+fi

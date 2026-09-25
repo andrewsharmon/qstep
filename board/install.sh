@@ -10,7 +10,8 @@
 #   --kernel    PREEMPT_RT kernel .deb from dist/kernel, CPU isolation cmdline, boot counting
 #               (takes effect after a PHYSICAL power cycle; adb reboot boots a stale ESP)
 #   --system    udev rules, boot/RT tuning service, VNC display services, LinuxCNC service,
-#               helper scripts; disables arduino-router/arduino-app-cli (they own the MCU link)
+#               helper scripts; disables arduino-router/arduino-app-cli (they own the MCU link).
+#               VNC only runs once a password is set with qstep-vnc-passwd.
 #   --hal       unoq_spi.so from dist/hal into LinuxCNC's module directory
 #   --config    LinuxCNC config into /home/arduino/qstep-config (keeps linuxcnc.var)
 #   --firmware  back up the STM32 flash (once), then flash dist/firmware/qstep-fw.elf
@@ -38,10 +39,10 @@ for a in "$@"; do
 	--dry-run) DRY=1 ;;
 	--all) STEPS="packages kernel system hal config firmware" ;;
 	--packages|--kernel|--system|--hal|--config|--firmware) STEPS="$STEPS ${a#--}" ;;
-	*) sed -n '4,24p' "$0"; exit 2 ;;
+	*) sed -n '4,25p' "$0"; exit 2 ;;
 	esac
 done
-[ -n "$STEPS" ] || { sed -n '4,24p' "$0"; exit 2; }
+[ -n "$STEPS" ] || { sed -n '4,25p' "$0"; exit 2; }
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
 
 run() {
@@ -81,7 +82,7 @@ step_system() {
 	b=$STAGE/board
 	run "install -m 644 $b/60-qstep.rules /etc/udev/rules.d/"
 	[ "$IMAGE" = 1 ] || run "udevadm control --reload && udevadm trigger --name-match=spidev0.0 && udevadm trigger --name-match=cpu_dma_latency"
-	run "install -m 755 $b/qstep-rt-tune $b/qstep-firstboot /usr/local/sbin/"
+	run "install -m 755 $b/qstep-rt-tune $b/qstep-firstboot $b/qstep-vnc-passwd /usr/local/sbin/"
 	run "install -m 755 $b/lcnc-ctl $b/soak-start /usr/local/bin/"
 	run "install -m 644 $b/qstep-rt-tune.service $b/qstep-xvfb.service $b/qstep-vnc.service $b/qstep-linuxcnc.service $b/qstep-firstboot.service /etc/systemd/system/"
 	run "mkdir -p /etc/qstep && chown arduino:arduino /etc/qstep && chmod 700 /etc/qstep"
@@ -95,10 +96,18 @@ step_system() {
 	else
 		run "systemctl disable --now arduino-router.service arduino-app-cli.service 2>/dev/null || true"
 		run "systemctl daemon-reload"
-		run "systemctl enable --now qstep-rt-tune.service qstep-xvfb.service qstep-vnc.service"
-		run "systemctl enable qstep-linuxcnc.service"
+		run "systemctl enable --now qstep-rt-tune.service qstep-xvfb.service"
+		run "systemctl enable qstep-vnc.service qstep-linuxcnc.service"
 	fi
-	echo "   VNC has no password until you run: x11vnc -storepasswd /etc/qstep/vnc.pass (then systemctl restart qstep-vnc)"
+	# qstep-vnc refuses to run without a password. Restart it to pick up a new
+	# unit, or stop it so an older no-password server doesn't keep running.
+	if [ -s /etc/qstep/vnc.pass ]; then
+		[ "$IMAGE" = 1 ] || run "systemctl restart qstep-vnc.service"
+	else
+		[ "$IMAGE" = 1 ] || run "systemctl stop qstep-vnc.service"
+		echo "   !! VNC stays OFF until you set a password (it never runs without one):"
+		echo "   !!     qstep-vnc-passwd"
+	fi
 }
 
 step_hal() {
@@ -140,14 +149,18 @@ step_firmware() {
 	run "mkdir -p /root/qstep"
 	# One-time backup of whatever is on the MCU now (the stock Arduino loader on a fresh board).
 	if [ ! -f /root/qstep/mcu-flash-backup.bin ]; then
-		run "$ocd -c 'init; reset halt; dump_image /root/qstep/mcu-flash-backup.bin 0x08000000 0x200000; reset run; shutdown'"
+		# Dump to a temporary file so a failed dump isn't mistaken for a backup next time.
+		run "$ocd -c 'init; reset halt; dump_image /root/qstep/mcu-flash-backup.bin.tmp 0x08000000 0x200000; reset run; shutdown'"
+		run "mv /root/qstep/mcu-flash-backup.bin.tmp /root/qstep/mcu-flash-backup.bin"
 	else
 		echo "   (MCU backup already at /root/qstep/mcu-flash-backup.bin)"
 	fi
 	# BOOT0 low, or the next reset lands in the ST ROM bootloader.
 	run "gpioset -c /dev/gpiochip1 -t0 37=0"
 	run "systemctl stop qstep-linuxcnc.service 2>/dev/null || true"
-	run "$ocd -c 'program $DIST/firmware/qstep-fw.elf verify reset exit' 2>&1 | grep -E 'Verified OK|Error: (flash|Verification)'"
+	# Show the result lines, but only "Verified OK" counts as success.
+	log=/root/qstep/firmware-flash.log
+	run "$ocd -c 'program $DIST/firmware/qstep-fw.elf verify reset exit' > $log 2>&1; grep -E 'Verified OK|Error: (flash|Verification)' $log; grep -q 'Verified OK' $log || { echo '   !! FIRMWARE FLASH FAILED (OpenOCD log: $log)'; exit 1; }"
 	echo "   firmware flashed; LinuxCNC can be started again with: lcnc-ctl start"
 }
 
