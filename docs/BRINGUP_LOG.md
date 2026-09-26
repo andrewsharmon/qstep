@@ -222,5 +222,13 @@ Note: the STM32 isn't touched by the Linux flasher, so on this board the "stock"
   - hold-test: 0 count changes at every sub-step target. soak-test: 45 moves, max following error 4.1 steps, 0-step return error, link 0 late / 0 errors / 0 bad frames, servo tmax 261 µs.
 - **The shipped config is back to 6400 steps/rev on Y** (DRV8825 at 1/32, the documented setup). This bench board keeps `SCALE = 3200` on Y in its installed INI for the TMC2208; only `--system` and `--hal` were redeployed. `hold-test.py`, `soak-test.py` and `soak-overnight.py` now read Y's scale from `unoq.1.position-scale` instead of assuming 6400 (the tests above ran at 3200).
 
+## 2026-09-25: Board restored to Arduino's stock software, PASS
+
+- New `tools/restore-stock.sh` uses only Arduino's tools. Linux: `arduino-flasher-cli` flashes image 20250807-136 (downloaded once to `~/.cache/qstep/arduino-images`, sha256 checked against Arduino's index), with the EDL jumper. STM32: `arduino-cli burn-bootloader -b arduino:zephyr:unoq -P jlink`, Arduino's documented loader restore, which the stock image ships with (Zephyr core 0.11.0-rc5, `remoteocd` tool, `flash write_image erase` of `zephyr-b_u585i_iot02a_stm32u585xx.elf`, no mass erase).
+- Arduino's literal `adb shell arduino-cli ...` fails on this image: adb's root shell has no Zephyr core in `/root/.arduino15`, and adb's `TMPDIR` (`/data/local/tmp`) doesn't exist. The script runs it as arduino with `setpriv` (no PAM, so the pending password change doesn't get in the way), `HOME=/home/arduino` and `TMPDIR=/tmp`.
+- The QStep firmware only overwrote 0x08000000-0x08009FFF. The stock sketch at 0x080F0000 was still there, so writing the loader back is enough: after `burn-bootloader`, a full 2 MB dump was **byte-identical** to `stock-mcu-flash-2MB.bin` (`c550fc1a…62d0`), both on the QStep system and again after the Linux reflash. The loader in the image's core is the same Zephyr build as the stock one (`v4.2.0-21-g277ebb69af4a`).
+- Run: download 2.4 GB (about 5 min), EDL flash (direct USB port, first try), first boot, loader restore. Result: kernel `6.16.0-geffa8626771a`, arduino-router and arduino-app-cli active, no QStep or LinuxCNC files, 3.2 GB free. The script copied `/root/qstep` and `/home/arduino/qstep-config` (with `SCALE = 3200` on Y) off the board first.
+- arduino-router logged `invalid packet, expected array` a few times around the MCU resets and stayed active.
+
 ### Next
 Open work is tracked in [TODO.md](../TODO.md).

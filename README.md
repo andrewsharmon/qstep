@@ -40,7 +40,7 @@ LinuxCNC + AXIS (VNC :1)                          SPI3 DMA slave, 64-byte frames
 | `configs/unoq-shield/` | LinuxCNC machine config (AXIS + headless) and test scripts |
 | `board/` | Board-side installer, systemd units, udev rules, helper scripts |
 | `kernel/` | RT kernel config fragment, GENI SPI patch, build script, stock config |
-| `tools/` | `make-release.sh`, `deploy.sh`, `mcu-build-flash.sh`, `spitest` |
+| `tools/` | `make-release.sh`, `deploy.sh`, `mcu-build-flash.sh`, `restore-stock.sh`, `spitest` |
 | `image/` | Single flashable image builder (local or private use only; not published) |
 
 Building from source needs the Lima VM (Debian 13 arm64), the Zephyr SDK and the

@@ -118,6 +118,31 @@ If VNC doesn't come up, `journalctl -u qstep-vnc` says why.
 Offline alternative: copy `qstep-<version>.tar.gz` (and its `.sha256`) to the board
 and run `sh qstep-bootstrap.sh --bundle qstep-<version>.tar.gz`.
 
+## Back to Arduino's stock software
+
+`tools/restore-stock.sh` removes QStep with Arduino's own tools. Run it on the
+computer the board is plugged into, from a clone of this repo:
+
+```bash
+tools/restore-stock.sh
+```
+
+It downloads Arduino's image (20250807-136 by default; `--version latest` for the
+newest) and flashes it with `arduino-flasher-cli`, which wipes the eMMC. It prompts
+you to fit the EDL jumper and, afterwards, to remove it (same steps as step 1
+above). Then it restores the STM32 with Arduino's documented
+`arduino-cli burn-bootloader -b arduino:zephyr:unoq -P jlink`, which the stock
+image ships with. The script runs it as the `arduino` user, because adb's root
+shell doesn't see the Zephyr core installed in `/home/arduino`.
+
+The flasher never touches the STM32, so without that step the QStep firmware
+stays on it. The QStep firmware only overwrites the loader at the start of the
+STM32 flash, so writing Arduino's loader back gives the stock flash again (on the
+development board, byte-identical to the dump taken before QStep was installed).
+`--mcu-only` does just the STM32. Before the wipe, the script copies `/root/qstep`
+(with the STM32 backup) and the LinuxCNC config off the board to
+`~/.cache/qstep/board-backups/`.
+
 ## Developers
 
 - `tools/deploy.sh` pushes a working tree to a board over adb and runs `board/install.sh`.
